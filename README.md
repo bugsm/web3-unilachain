@@ -1,7 +1,8 @@
 # skpi-app
 
 Aplikasi off-chain untuk sistem SKPI Unila: backend Express, frontend React, dan pengujian kinerja Caliper.
-Jaringan Fabric (peer, orderer, CA) dan chaincode ada di repo terpisah, **unila-chain**.
+Ini bagian **off-chain**. Jaringan Fabric (peer, orderer, CA) dan chaincode adalah bagian **on-chain**
+di repo terpisah, **unila-chain** (folder `onchain/` di sebelah folder ini).
 
 ```
 backend/      Express 5 + @hyperledger/fabric-gateway (Sprint S4)
