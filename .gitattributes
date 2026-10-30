@@ -1,0 +1,5 @@
+# Repo dikerjakan di Windows tapi dijalankan di Ubuntu: paksa LF agar skrip bash tidak rusak (\r).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.tar.gz binary

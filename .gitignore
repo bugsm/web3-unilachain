@@ -1,0 +1,25 @@
+# --- Identitas Fabric (sertifikat + kunci privat dari VM-1) & rahasia ---
+wallet/
+*_sk
+*.key
+*.pem
+.env
+.env.*
+!.env.example
+
+# --- Node / build ---
+node_modules/
+dist/
+.vite/
+coverage/
+*.log
+
+# --- Caliper: report mentah tiap putaran disalin manual ke results/caliper/run-N ---
+caliper/report.html
+caliper/caliper.log
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
