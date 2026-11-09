@@ -50,3 +50,5 @@ Rincian lengkap ada di `docs/desain-alur-pengesahan.md` repo unila-chain. Yang m
 - **Verifikator** (tanpa login) mencari dengan NPM **atau** nama. Pencarian nama memakai database off-chain untuk mendapatkan NPM,
   lalu status diambil dari ledger lewat `VerifikasiSKPI(npm)` dengan identitas `app-reader`. Endpoint ini wajib dibatasi laju
   permintaan dan jumlah hasilnya, dan nama yang sama dapat menghasilkan lebih dari satu lulusan.
+- **Nama rektor** disimpan di tabel periode jabatan (nama, tanggal mulai, tanggal selesai). Saat verifikasi, nama dipilih berdasarkan
+  `rektorTimestamp` dari hasil `VerifikasiSKPI`.
