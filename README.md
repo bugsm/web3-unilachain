@@ -47,4 +47,6 @@ Rincian lengkap ada di `docs/desain-alur-pengesahan.md` repo unila-chain. Yang m
 - **Dekan** melihat antrean draft fakultasnya. *Tolak* hanya mengubah status draft di database; *Setujui*
   mengirim transaksi (`SahkanDekan` / `PerbaruiSKPI` / `CabutSKPI`) dengan identitas X.509 dekan tersebut.
 - **Rektor** melihat SKPI berstatus `MENUNGGU_REKTOR` dan mengirim `SahkanRektor` atau `TolakRektor`.
-- **Verifikator** (tanpa login) memanggil `VerifikasiSKPI` lewat identitas `app-reader`.
+- **Verifikator** (tanpa login) mencari dengan NPM **atau** nama. Pencarian nama memakai database off-chain untuk mendapatkan NPM,
+  lalu status diambil dari ledger lewat `VerifikasiSKPI(npm)` dengan identitas `app-reader`. Endpoint ini wajib dibatasi laju
+  permintaan dan jumlah hasilnya, dan nama yang sama dapat menghasilkan lebih dari satu lulusan.
