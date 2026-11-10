@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router"
 import { PublicNav } from "@/components/PublicNav"
 import { NAV, Shell } from "@/components/Shell"
+import { ApprovalsScreen } from "@/screens/approvals/ApprovalsScreen"
 import { Login } from "@/screens/Login"
 import { Overview } from "@/screens/Overview"
 import { RecordScreen } from "@/screens/record/RecordScreen"
@@ -49,7 +50,7 @@ const screens: Record<string, ReactNode> = {
   login: <Login />,
   overview: <Overview />,
   record: <RecordScreen />,
-  approvals: <Pending title="Antrean pengesahan" />,
+  approvals: <ApprovalsScreen />,
   registry: <Pending title="Daftar & riwayat" />,
   verify: <Pending title="Periksa keabsahan SKPI lulusan Universitas Lampung." publicPage />,
   result: <Pending title="Hasil verifikasi" publicPage />,
