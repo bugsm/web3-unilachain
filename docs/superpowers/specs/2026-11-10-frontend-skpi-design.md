@@ -96,22 +96,25 @@ dengan status 400/401/403/404/409/429/502/503 sesuai CLAUDE.md.
 |---|---|---|
 | `POST /auth/login` `{identifier,password,role}` | publik | `→ {user}` |
 | `GET /auth/me` / `POST /auth/logout` | login | `→ {user}` / 204 |
-| `GET /records?status&q` | semua staf | daftar gabungan draft+aset dalam lingkup peran |
-| `GET /records/:npm` | staf | detail + `history[]` (ledger + off-chain) |
-| `GET /queue` | dekan, rektor | antrean tahap peran (draft fakultas / `MENUNGGU_REKTOR`) |
-| `GET /activity?limit=` | staf | peristiwa terbaru dalam lingkup peran |
-| `POST /drafts` `{type,npm,name?,skpiId?,programStudy?,totalSKP?,reason?}` | admin | `→ {draft}` |
+| `GET /records?status&q` | semua staf | `→ SkpiRecord[]` (draft+aset dalam lingkup peran) |
+| `GET /records/:npm` | staf | `→ RecordDetail` (detail + `history[]` ledger dan off-chain) |
+| `GET /queue` | dekan, rektor | `→ QueueItem[]` (draft fakultas / `MENUNGGU_REKTOR`) |
+| `GET /activity?limit=` | staf | `→ ActivityItem[]` |
+| `POST /drafts` `{type,npm,name?,skpiId?,programStudy?,totalSKP?,reason?}` (datar) | admin | `→ {draft}` |
 | `POST /drafts/batch` `{items[]}` | admin | `→ {created[], errors[]}` |
-| `PUT /drafts/:id` | admin (DITOLAK_DEKAN) | ubah & ajukan ulang |
+| `PUT /drafts/:id` `{name,skpiId,programStudy,totalSKP}` | admin (DITOLAK_DEKAN) | ubah & ajukan ulang `→ {draft}` |
 | `POST /drafts/:id/approve` | dekan | `→ {txId}` |
 | `POST /drafts/:id/reject` `{reason}` | dekan | `→ {draft}` |
 | `POST /records/:npm/rektor/approve` | rektor | `→ {txId}` |
 | `POST /records/:npm/rektor/reject` `{reason}` | rektor | `→ {txId}` |
-| `GET /verify?q=` | publik, rate limit | `→ {candidates[]}` (maks 10) |
-| `GET /verify/:npm` | publik, rate limit | `→ {status, data, rektorName}` |
+| `GET /verify?q=` | publik, rate limit | `→ {candidates[], truncated}` (maks 10; `truncated` = ada lebih dari 10 kecocokan) |
+| `GET /verify/:npm` | publik, rate limit | `→ VerifyResult {status, data, rektorName}` |
 | `GET /ledger/info` | publik | `→ {channel, msp, height?}` |
 
-Bentuk tipe TypeScript-nya ditetapkan di `frontend/src/api/types.ts` dan menjadi acuan backend.
+Bentuk tipe TypeScript-nya ditetapkan di `frontend/src/api/types.ts` dan menjadi acuan backend; `frontend/src/api/httpClient.ts`
+membuka pembungkus `{user}`/`{draft}` dan meratakan `data` draft ke body. Alasan (`reason`) dikirim sebagai satu baris karena
+chaincode menolak karakter kontrol. Draft `DITOLAK_DEKAN` yang digantikan draft baru untuk NPM yang sama berstatus `DIGANTIKAN`
+dan tidak lagi menentukan status rekaman maupun memesan nomor SKPI.
 
 ## 7. Arsitektur frontend
 

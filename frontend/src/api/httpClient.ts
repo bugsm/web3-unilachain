@@ -1,5 +1,6 @@
 import type { ApiClient } from "./client"
 import { ApiError } from "./errors"
+import type { Draft, User, VerifyCandidate } from "./types"
 
 const CODE_BY_STATUS: Record<number, string> = {
   400: "VALIDATION",
@@ -41,11 +42,15 @@ export function createHttpClient(base = "/api", fetchImpl: typeof fetch = fetch)
   const post = <T>(path: string, body: unknown = {}) => request<T>(path, { method: "POST", body })
   const enc = encodeURIComponent
 
+  // Bentuk body/respons dipatok spec §6: {user}, {draft}, body draft datar, {candidates, truncated?}.
+  const user = (p: Promise<{ user: User }>) => p.then((r) => r.user)
+  const draft = (p: Promise<{ draft: Draft }>) => p.then((r) => r.draft)
+
   return {
-    login: (input) => post("/auth/login", input),
+    login: (input) => user(post("/auth/login", input)),
     async me() {
       try {
-        return await request("/auth/me")
+        return await user(request("/auth/me"))
       } catch (e) {
         if (e instanceof ApiError && e.status === 401) return null
         throw e
@@ -64,14 +69,18 @@ export function createHttpClient(base = "/api", fetchImpl: typeof fetch = fetch)
     getRecord: (npm) => request(`/records/${enc(npm)}`),
     activity: (limit) => request(`/activity?limit=${limit}`),
     listQueue: () => request("/queue"),
-    createDraft: (input) => post("/drafts", input),
+    createDraft: ({ data, ...rest }) => draft(post("/drafts", { ...rest, ...data })),
     createDrafts: (items) => post("/drafts/batch", { items }),
-    updateDraft: (id, data) => request(`/drafts/${enc(id)}`, { method: "PUT", body: data }),
+    updateDraft: (id, data) => draft(request(`/drafts/${enc(id)}`, { method: "PUT", body: data })),
     approveDraft: (id) => post(`/drafts/${enc(id)}/approve`),
-    rejectDraft: (id, reason) => post(`/drafts/${enc(id)}/reject`, { reason }),
+    rejectDraft: (id, reason) => draft(post(`/drafts/${enc(id)}/reject`, { reason })),
     rektorApprove: (npm) => post(`/records/${enc(npm)}/rektor/approve`),
     rektorReject: (npm, reason) => post(`/records/${enc(npm)}/rektor/reject`, { reason }),
-    searchPublic: (q) => request(`/verify?q=${enc(q)}`),
+    searchPublic: (q) =>
+      request<{ candidates: VerifyCandidate[]; truncated?: boolean }>(`/verify?q=${enc(q)}`).then((r) => ({
+        candidates: r.candidates,
+        truncated: r.truncated ?? false,
+      })),
     verify: (npm) => request(`/verify/${enc(npm)}`),
     ledgerInfo: () => request("/ledger/info"),
   }

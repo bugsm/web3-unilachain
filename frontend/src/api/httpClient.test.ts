@@ -84,3 +84,51 @@ test("logout menerima 204", async () => {
   await expect(client.logout()).resolves.toBeUndefined()
   expect(call(fetchImpl)[0]).toBe("/api/auth/logout")
 })
+
+describe("bentuk respons dan body mengikuti spec §6", () => {
+  const user = { id: "u1", name: "Dekan FMIPA", role: "dekan", faculty: "FMIPA", actorId: "dekan-fmipa@UnilaMSP" }
+  const draft = { id: "d1", type: "PENCATATAN", status: "MENUNGGU_DEKAN", npm: "2317051001" }
+
+  test("login dan me membuka {user}", async () => {
+    const { client, fetchImpl } = setup(json(200, { user }))
+    expect(await client.login({ identifier: "a@unila.ac.id", password: "x".repeat(8), role: "dekan" })).toEqual(user)
+    fetchImpl.mockResolvedValueOnce(json(200, { user }))
+    expect(await client.me()).toEqual(user)
+  })
+
+  test("createDraft mengirim body datar dan membuka {draft}", async () => {
+    const { client, fetchImpl } = setup(json(201, { draft }))
+    const res = await client.createDraft({
+      type: "PENCATATAN",
+      npm: "2317051001",
+      data: { name: "Nabila", skpiId: "001/UN26.17/SKPI/2026", programStudy: "S1 Ilmu Komputer", totalSKP: 180 },
+    })
+    expect(res).toEqual(draft)
+    expect(JSON.parse(call(fetchImpl)[1].body as string)).toEqual({
+      type: "PENCATATAN",
+      npm: "2317051001",
+      name: "Nabila",
+      skpiId: "001/UN26.17/SKPI/2026",
+      programStudy: "S1 Ilmu Komputer",
+      totalSKP: 180,
+    })
+  })
+
+  test("pencabutan: body datar berisi reason", async () => {
+    const { client, fetchImpl } = setup(json(201, { draft }))
+    await client.createDraft({ type: "PENCABUTAN", npm: "2317051001", reason: "Dokumen diterbitkan ulang" })
+    expect(JSON.parse(call(fetchImpl)[1].body as string)).toEqual({ type: "PENCABUTAN", npm: "2317051001", reason: "Dokumen diterbitkan ulang" })
+  })
+
+  test("rejectDraft dan updateDraft membuka {draft}", async () => {
+    const { client, fetchImpl } = setup(json(200, { draft }))
+    expect(await client.rejectDraft("d1", "alasan yang cukup")).toEqual(draft)
+    fetchImpl.mockResolvedValueOnce(json(200, { draft }))
+    expect(await client.updateDraft("d1", { name: "N", skpiId: "001/UN26.17/SKPI/2026", programStudy: "S1 Ilmu Komputer", totalSKP: 30 })).toEqual(draft)
+  })
+
+  test("searchPublic: truncated bawaan false bila server tidak mengirimnya", async () => {
+    const { client } = setup(json(200, { candidates: [] }))
+    expect(await client.searchPublic("budi")).toEqual({ candidates: [], truncated: false })
+  })
+})
