@@ -132,6 +132,9 @@ export function submitDraft(s: Store, input: NewDraft, actor: string, faculty: F
   }
   assertNoActiveDraft(s, input.npm)
   if (data) assertSkpiIdFree(s, data.skpiId, input.npm)
+  // Draft lama yang ditolak dipensiunkan: tidak lagi menentukan status atau menyandera nomor SKPI.
+  for (const old of s.drafts.values())
+    if (old.npm === input.npm && old.status === "DITOLAK_DEKAN") Object.assign(old, { status: "DIGANTIKAN", updatedAt: at })
 
   const draft: Draft = {
     id: `d${++s.seq}`,

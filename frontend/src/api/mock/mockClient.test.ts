@@ -277,3 +277,20 @@ test("draft yang ditolak Dekan tidak memblokir draft baru", async () => {
   expect(rec.pendingDraft?.id).toBe(again.id)
   expect(rec.pendingDraft?.status).toBe("MENUNGGU_DEKAN")
 })
+
+test("draft ditolak yang digantikan draft baru tidak menyandera status maupun nomor SKPI", async () => {
+  const d1 = await submit(client, input({ skpiId: "777/UN26.17/SKPI/2026" }))
+  await loginAs(client, "dekan.fmipa@unila.ac.id")
+  await client.rejectDraft(d1.id, "Nomor SKPI tidak sesuai dokumen")
+  const d2 = await submit(client, input({ skpiId: "778/UN26.17/SKPI/2026" }))
+  await loginAs(client, "dekan.fmipa@unila.ac.id")
+  await client.approveDraft(d2.id)
+  const rec = await client.getRecord("2317051001")
+  expect(rec.status).toBe("MENUNGGU_REKTOR")
+  expect(rec.skpiId).toBe("778/UN26.17/SKPI/2026")
+  expect(rec.pendingDraft).toBeNull()
+  await loginAs(client, "rektor@unila.ac.id")
+  expect((await client.listQueue()).map((q) => q.record?.npm)).toContain("2317051001")
+  // Nomor milik draft lama yang digantikan bebas dipakai NPM lain.
+  await submit(client, input({ npm: "2317051002", skpiId: "777/UN26.17/SKPI/2026" }))
+})

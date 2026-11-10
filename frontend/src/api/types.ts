@@ -21,7 +21,8 @@ export interface User {
 export type LedgerStatus = "MENUNGGU_REKTOR" | "AKTIF" | "DITOLAK_REKTOR" | "DICABUT"
 export type RecordStatus = "MENUNGGU_DEKAN" | "DITOLAK_DEKAN" | LedgerStatus
 export type DraftType = "PENCATATAN" | "PERUBAHAN" | "PENCABUTAN"
-export type DraftStatus = "MENUNGGU_DEKAN" | "DITOLAK_DEKAN" | "DISETUJUI"
+/** DIGANTIKAN: draft yang ditolak lalu digantikan draft baru untuk NPM yang sama (tidak lagi aktif). */
+export type DraftStatus = "MENUNGGU_DEKAN" | "DITOLAK_DEKAN" | "DISETUJUI" | "DIGANTIKAN"
 export type SkpiData = Omit<SkpiInput, "npm">
 
 export interface Draft {
