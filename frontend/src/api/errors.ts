@@ -10,6 +10,7 @@ export class ApiError extends Error {
 }
 
 const BY_STATUS: Record<number, string> = {
+  0: "Layanan ledger sedang tidak terjangkau.",
   401: "Sesi berakhir, silakan masuk kembali.",
   403: "Anda tidak berwenang untuk tindakan ini.",
   429: "Terlalu banyak permintaan, coba lagi dalam beberapa saat.",
