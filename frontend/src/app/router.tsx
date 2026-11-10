@@ -4,6 +4,7 @@ import { PublicNav } from "@/components/PublicNav"
 import { NAV, Shell } from "@/components/Shell"
 import { Login } from "@/screens/Login"
 import { Overview } from "@/screens/Overview"
+import { RecordScreen } from "@/screens/record/RecordScreen"
 import { useSession } from "./session"
 
 /** Pengganti sementara layar yang dibangun di task berikutnya. */
@@ -47,7 +48,7 @@ function StaffLayout() {
 const screens: Record<string, ReactNode> = {
   login: <Login />,
   overview: <Overview />,
-  record: <Pending title="Catat SKPI" />,
+  record: <RecordScreen />,
   approvals: <Pending title="Antrean pengesahan" />,
   registry: <Pending title="Daftar & riwayat" />,
   verify: <Pending title="Periksa keabsahan SKPI lulusan Universitas Lampung." publicPage />,
