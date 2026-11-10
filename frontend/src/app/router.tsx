@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router"
 import { PublicNav } from "@/components/PublicNav"
 import { NAV, Shell } from "@/components/Shell"
+import { Login } from "@/screens/Login"
 import { useSession } from "./session"
 
 /** Pengganti sementara layar yang dibangun di task berikutnya. */
@@ -43,7 +44,7 @@ function StaffLayout() {
 }
 
 const screens: Record<string, ReactNode> = {
-  login: <Pending title="Masuk ke Sistem Pengesahan SKPI" publicPage />,
+  login: <Login />,
   overview: <Pending title="Ikhtisar" />,
   record: <Pending title="Catat SKPI" />,
   approvals: <Pending title="Antrean pengesahan" />,
