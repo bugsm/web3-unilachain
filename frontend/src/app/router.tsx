@@ -6,6 +6,7 @@ import { ApprovalsScreen } from "@/screens/approvals/ApprovalsScreen"
 import { Login } from "@/screens/Login"
 import { Overview } from "@/screens/Overview"
 import { RecordScreen } from "@/screens/record/RecordScreen"
+import { RegistryScreen } from "@/screens/registry/RegistryScreen"
 import { useSession } from "./session"
 
 /** Pengganti sementara layar yang dibangun di task berikutnya. */
@@ -51,7 +52,7 @@ const screens: Record<string, ReactNode> = {
   overview: <Overview />,
   record: <RecordScreen />,
   approvals: <ApprovalsScreen />,
-  registry: <Pending title="Daftar & riwayat" />,
+  registry: <RegistryScreen />,
   verify: <Pending title="Periksa keabsahan SKPI lulusan Universitas Lampung." publicPage />,
   result: <Pending title="Hasil verifikasi" publicPage />,
 }

@@ -264,3 +264,16 @@ test("seed bawaan mencakup semua status", async () => {
   await loginAs(seeded, "admin.ft@unila.ac.id")
   expect((await seeded.listRecords()).every((r) => r.facultyCode === "FT")).toBe(true)
 })
+
+test("draft yang ditolak Dekan tidak memblokir draft baru", async () => {
+  await activate(client, input())
+  await loginAs(client, "admin.fmipa@unila.ac.id")
+  const d = await client.createDraft({ type: "PENCABUTAN", npm: "2317051001", reason: "Dokumen diterbitkan ulang" })
+  await loginAs(client, "dekan.fmipa@unila.ac.id")
+  await client.rejectDraft(d.id, "Belum ada surat keputusan pencabutan")
+  await loginAs(client, "admin.fmipa@unila.ac.id")
+  const again = await client.createDraft({ type: "PENCABUTAN", npm: "2317051001", reason: "Sudah ada surat keputusan pencabutan" })
+  const rec = await client.getRecord("2317051001")
+  expect(rec.pendingDraft?.id).toBe(again.id)
+  expect(rec.pendingDraft?.status).toBe("MENUNGGU_DEKAN")
+})

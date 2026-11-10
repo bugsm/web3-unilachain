@@ -90,8 +90,9 @@ function assertSkpiIdFree(s: Store, skpiId: string, npm: string, ignoreDraft?: s
     throw new ApiError(409, "CONFLICT", "Nomor SKPI sudah dipakai SKPI lain.")
 }
 
+/** Hanya draft yang masih menunggu Dekan yang memblokir; draft yang ditolak boleh digantikan draft baru. */
 function assertNoActiveDraft(s: Store, npm: string) {
-  if (activeDraft(s, npm))
+  if (activeDraft(s, npm)?.status === "MENUNGGU_DEKAN")
     throw new ApiError(409, "CONFLICT", `NPM ${npm} sudah memiliki draft yang belum diputuskan.`)
 }
 
