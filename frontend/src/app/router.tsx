@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from "react-router"
 import { PublicNav } from "@/components/PublicNav"
 import { NAV, Shell } from "@/components/Shell"
 import { Login } from "@/screens/Login"
+import { Overview } from "@/screens/Overview"
 import { useSession } from "./session"
 
 /** Pengganti sementara layar yang dibangun di task berikutnya. */
@@ -45,7 +46,7 @@ function StaffLayout() {
 
 const screens: Record<string, ReactNode> = {
   login: <Login />,
-  overview: <Pending title="Ikhtisar" />,
+  overview: <Overview />,
   record: <Pending title="Catat SKPI" />,
   approvals: <Pending title="Antrean pengesahan" />,
   registry: <Pending title="Daftar & riwayat" />,

@@ -29,10 +29,12 @@ export function PageHeader({
   )
 }
 
-export function SectionTitle({ title, aside }: { title: ReactNode; aside?: ReactNode }) {
+export function SectionTitle({ title, aside, id }: { title: ReactNode; aside?: ReactNode; id?: string }) {
   return (
     <div className="flex min-h-14 items-center justify-between gap-4 border-b border-slate-200 px-5">
-      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+      <h2 id={id} className="text-sm font-semibold text-slate-900">
+        {title}
+      </h2>
       {aside}
     </div>
   )

@@ -1,6 +1,6 @@
 export { Badge, StatusBadge, Tag, TONE } from "./Badge"
 export { Brand, Logo } from "./Brand"
-export { Button, IconButton } from "./Button"
+export { Button, IconButton, LinkButton, buttonClass } from "./Button"
 export { cx } from "./cx"
 export { Drawer } from "./Drawer"
 export { Field, Input, Select, Textarea } from "./Field"
