@@ -118,3 +118,10 @@ describe("validateReason", () => {
     expect(validateReason("1234567890")).toBeUndefined()
   })
 })
+
+describe("alasan multi-baris (chaincode menolak karakter kontrol)", () => {
+  test("normalizeReason meratakan baris dan spasi", async () => {
+    const { normalizeReason } = await import("./skpi")
+    expect(normalizeReason(" Baris satu\n\n  baris\tdua ")).toBe("Baris satu baris dua")
+  })
+})

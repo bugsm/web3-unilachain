@@ -294,3 +294,10 @@ test("draft ditolak yang digantikan draft baru tidak menyandera status maupun no
   // Nomor milik draft lama yang digantikan bebas dipakai NPM lain.
   await submit(client, input({ npm: "2317051002", skpiId: "777/UN26.17/SKPI/2026" }))
 })
+
+test("mock meniru chaincode: alasan berisi karakter kontrol ditolak", async () => {
+  const p = input()
+  const d = await submit(client, p)
+  await loginAs(client, "dekan.fmipa@unila.ac.id")
+  await expectApiError(client.rejectDraft(d.id, "Baris satu\nbaris dua alasan"), 400)
+})

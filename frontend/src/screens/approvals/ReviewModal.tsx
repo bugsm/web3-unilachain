@@ -9,7 +9,7 @@ import { CustodySteps } from "@/components/Custody"
 import { Button, Field, Modal, StatusBadge, Textarea, cx } from "@/components/ui"
 import { issuerLabel } from "@/domain/faculty"
 import { formatDateTime } from "@/domain/format"
-import { predicateOf, validateReason } from "@/domain/skpi"
+import { normalizeReason, predicateOf, validateReason } from "@/domain/skpi"
 import { DRAFT_TYPE_LABEL, FIELD_LABEL } from "@/domain/status"
 import { approve, approveLabel, approvedMessage, dataOf, npmOf, reject, rejectedMessage } from "./queue"
 
@@ -67,7 +67,7 @@ export function ReviewModal({
     setError(null)
     try {
       if (kind === "approve") await approve(api, incoming)
-      else await reject(api, incoming, reason.trim())
+      else await reject(api, incoming, normalizeReason(reason))
       lock.current = false
       setBusy(null)
       setRejecting(false)

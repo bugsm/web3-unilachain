@@ -91,8 +91,11 @@ export function toForm(input: SkpiInput): SkpiForm {
   return { ...input, totalSKP: String(input.totalSKP) }
 }
 
+/** Chaincode menolak karakter kontrol (termasuk baris baru): alasan dikirim sebagai satu baris. */
+export const normalizeReason = (v: string) => v.replace(/\s+/g, " ").trim()
+
 export function validateReason(v: string): string | undefined {
-  const s = v.trim()
+  const s = normalizeReason(v)
   if (s.length < MIN_REASON) return "Alasan minimal 10 karakter."
   if (s.length > MAX_REASON) return "Alasan maksimal 500 karakter."
   return undefined

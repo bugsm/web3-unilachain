@@ -47,6 +47,7 @@ export const createStore = (): Store => ({
 })
 
 const PENDING = new Set(["MENUNGGU_DEKAN", "DITOLAK_DEKAN"])
+const CONTROL = /[\u0000-\u001f\u007f]/
 const FIELDS: Array<keyof SkpiData> = ["name", "skpiId", "programStudy", "totalSKP"]
 
 export function txId(): string {
@@ -122,8 +123,7 @@ export function submitDraft(s: Store, input: NewDraft, actor: string, faculty: F
   let reason: string | null = null
   if (input.type === "PENCABUTAN") {
     assertActive(s, input.npm)
-    const err = validateReason(input.reason ?? "")
-    if (err) throw new ApiError(400, "VALIDATION", err)
+    assertReason(input.reason ?? "")
     reason = input.reason!.trim()
   } else {
     data = assertData(input.npm, input.data, faculty)
@@ -179,11 +179,17 @@ export function resubmitDraft(s: Store, id: string, data: SkpiData, actor: strin
   return d
 }
 
+/** Cermin validasiTeks chaincode untuk alasan: wajib, ≤ 500, tanpa karakter kontrol. */
+function assertReason(reason: string) {
+  if (CONTROL.test(reason)) throw new ApiError(400, "VALIDATION", "Alasan tidak boleh berisi karakter kontrol.")
+  const err = validateReason(reason)
+  if (err) throw new ApiError(400, "VALIDATION", err)
+}
+
 export function rejectDraft(s: Store, id: string, reason: string, actor: string, at: string) {
   const d = findDraft(s, id)
   if (d.status !== "MENUNGGU_DEKAN") throw new ApiError(409, "CONFLICT", "Draft tidak sedang menunggu Dekan.")
-  const err = validateReason(reason)
-  if (err) throw new ApiError(400, "VALIDATION", err)
+  assertReason(reason)
   Object.assign(d, { status: "DITOLAK_DEKAN", rejectReason: reason.trim(), updatedAt: at })
   log(s, d.npm, { kind: "offchain", action: "DITOLAK_DEKAN", at, actor, txId: null, note: reason.trim() })
   return d
@@ -265,8 +271,7 @@ export function rektorApprove(s: Store, npm: string, actor: string, at: string):
 }
 
 export function rektorReject(s: Store, npm: string, reason: string, actor: string, at: string): string {
-  const err = validateReason(reason)
-  if (err) throw new ApiError(400, "VALIDATION", err)
+  assertReason(reason)
   const asset = awaitingRektor(s, npm)
   s.skpiIndex.delete(asset.skpiId)
   Object.assign(asset, { status: "DITOLAK_REKTOR", rektorId: actor, rektorTimestamp: at, revocationReason: reason.trim() })

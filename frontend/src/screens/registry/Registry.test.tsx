@@ -105,3 +105,15 @@ test("dekan dan rektor hanya membaca", async () => {
   expect(await within(d).findByText("Perubahan dan pencabutan diajukan oleh admin fakultas.")).toBeInTheDocument()
   expect(within(d).queryByRole("button", { name: /Ajukan/ })).toBeNull()
 })
+
+test("alasan pencabutan multi-baris dikirim sebagai satu baris", async () => {
+  const { user, client: c } = await renderApp("/daftar/2017051008", { as: "admin.fmipa@unila.ac.id" })
+  const d = await drawer()
+  const spy = vi.spyOn(c, "createDraft")
+  await user.click(await within(d).findByRole("button", { name: /Ajukan pencabutan/ }))
+  const modal = await screen.findByRole("dialog", { name: /Ajukan pencabutan SKPI/ })
+  await user.type(within(modal).getByLabelText("Alasan pencabutan"), "Dokumen ganda.{Enter}Sudah diganti.")
+  await user.type(within(modal).getByLabelText(/Ketik NPM/), "2017051008")
+  await user.click(within(modal).getByRole("button", { name: /Ajukan pencabutan/ }))
+  await waitFor(() => expect(spy).toHaveBeenCalledWith({ type: "PENCABUTAN", npm: "2017051008", reason: "Dokumen ganda. Sudah diganti." }))
+})

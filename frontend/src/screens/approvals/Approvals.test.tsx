@@ -120,3 +120,14 @@ test("?tinjau membuka modal tinjau untuk NPM itu", async () => {
   await open("dekan.fmipa@unila.ac.id", "/antrean?tinjau=2017051064")
   expect(await screen.findByRole("dialog", { name: /Aulia Rahmawati/ })).toBeInTheDocument()
 })
+
+test("alasan multi-baris dikirim sebagai satu baris", async () => {
+  const { user, client } = await open("rektor@unila.ac.id")
+  const spy = vi.spyOn(client, "rektorReject")
+  await user.click(within(row("Andi Wijaya")).getByRole("button", { name: "Tinjau" }))
+  const dialog = await screen.findByRole("dialog")
+  await user.click(within(dialog).getByRole("button", { name: "Tolak" }))
+  await user.type(within(dialog).getByLabelText("Alasan penolakan"), "Lampiran belum lengkap.{Enter}Mohon dilengkapi.")
+  await user.click(within(dialog).getByRole("button", { name: /Tolak \(TolakRektor\)/ }))
+  await waitFor(() => expect(spy).toHaveBeenCalledWith("2015061024", "Lampiran belum lengkap. Mohon dilengkapi."))
+})

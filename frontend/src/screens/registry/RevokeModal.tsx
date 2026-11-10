@@ -4,7 +4,7 @@ import { userMessage } from "@/api/errors"
 import type { SkpiRecord } from "@/api/types"
 import { useApi } from "@/app/ApiProvider"
 import { Button, Field, Input, Modal, Textarea } from "@/components/ui"
-import { validateReason } from "@/domain/skpi"
+import { normalizeReason, validateReason } from "@/domain/skpi"
 
 export function RevokeModal({ record, onClose, onSaved }: { record: SkpiRecord; onClose: () => void; onSaved: (m: string) => void }) {
   const api = useApi()
@@ -21,7 +21,7 @@ export function RevokeModal({ record, onClose, onSaved }: { record: SkpiRecord; 
     setSaving(true)
     setError(null)
     try {
-      await api.createDraft({ type: "PENCABUTAN", npm: record.npm, reason: reason.trim() })
+      await api.createDraft({ type: "PENCABUTAN", npm: record.npm, reason: normalizeReason(reason) })
       onSaved("Draft pencabutan diajukan ke Dekan")
     } catch (e) {
       setError(userMessage(e))
