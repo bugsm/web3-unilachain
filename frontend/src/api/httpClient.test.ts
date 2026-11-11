@@ -132,3 +132,21 @@ describe("bentuk respons dan body mengikuti spec §6", () => {
     expect(await client.searchPublic("budi")).toEqual({ candidates: [], truncated: false })
   })
 })
+
+test("endpoint pejabat", async () => {
+  const official = { office: "REKTOR", periods: [], lastChange: null }
+  const { client, fetchImpl } = setup(json(200, [official]))
+  await client.listOfficials()
+  expect(call(fetchImpl)[0]).toBe("/api/officials")
+  fetchImpl.mockResolvedValueOnce(json(200, []))
+  await client.officialChanges("FMIPA")
+  expect(call(fetchImpl, 1)[0]).toBe("/api/officials/changes?office=FMIPA")
+  fetchImpl.mockResolvedValueOnce(json(200, official))
+  await client.correctOfficial("REKTOR", "p1", "Nama Baru")
+  expect(call(fetchImpl, 2)[0]).toBe("/api/officials/REKTOR/corrections")
+  expect(JSON.parse(call(fetchImpl, 2)[1].body as string)).toEqual({ periodId: "p1", name: "Nama Baru" })
+  fetchImpl.mockResolvedValueOnce(json(200, official))
+  await client.replaceOfficial("FMIPA", "Nama Baru", "2026-11-01")
+  expect(call(fetchImpl, 3)[0]).toBe("/api/officials/FMIPA/successions")
+  expect(JSON.parse(call(fetchImpl, 3)[1].body as string)).toEqual({ name: "Nama Baru", from: "2026-11-01" })
+})

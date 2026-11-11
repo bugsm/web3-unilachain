@@ -211,11 +211,11 @@ test("10. verifikasi publik hanya memberi data publik", async () => {
   const p = input({ npm: "2317051002", skpiId: "002/UN26.17/SKPI/2026" })
   const d = await submit(client, p)
   await client.logout()
-  expect(await client.verify(p.npm)).toEqual({ status: "TIDAK_TERDAFTAR", data: null, rektorName: null })
+  expect(await client.verify(p.npm)).toEqual({ status: "TIDAK_TERDAFTAR", data: null, rektorName: null, dekanName: null })
   await loginAs(client, "dekan.fmipa@unila.ac.id")
   await client.approveDraft(d.id)
   await client.logout()
-  expect(await client.verify(p.npm)).toEqual({ status: "BELUM_SAH", data: null, rektorName: null })
+  expect(await client.verify(p.npm)).toEqual({ status: "BELUM_SAH", data: null, rektorName: null, dekanName: null })
 
   await loginAs(client, "admin.fmipa@unila.ac.id")
   const c = await client.createDraft({ type: "PENCABUTAN", npm: "2317051001", reason: "Dokumen diterbitkan ulang" })
@@ -225,7 +225,7 @@ test("10. verifikasi publik hanya memberi data publik", async () => {
   const revoked = await client.verify("2317051001")
   expect(revoked.status).toBe("DICABUT")
   expect(JSON.stringify(revoked)).not.toContain("diterbitkan ulang")
-  expect(await client.verify("2317059999")).toEqual({ status: "TIDAK_TERDAFTAR", data: null, rektorName: null })
+  expect(await client.verify("2317059999")).toEqual({ status: "TIDAK_TERDAFTAR", data: null, rektorName: null, dekanName: null })
   await expectApiError(client.verify("12"), 400)
 })
 
@@ -300,4 +300,69 @@ test("mock meniru chaincode: alasan berisi karakter kontrol ditolak", async () =
   const d = await submit(client, p)
   await loginAs(client, "dekan.fmipa@unila.ac.id")
   await expectApiError(client.rejectDraft(d.id, "Baris satu\nbaris dua alasan"), 400)
+})
+
+describe("pejabat penanda tangan", () => {
+  const NOW = () => new Date("2026-11-11T05:00:00Z") // 11 Nov 2026 12.00 WIB
+  const LUSMEILIA = "Prof. Dr. Ir. Lusmeilia Afriani, D.E.A., IPM., ASEAN Eng."
+  let c: ApiClient
+  beforeEach(() => {
+    c = createMockClient({ latencyMs: 0, now: NOW })
+  })
+  const rektor = async () => (await c.listOfficials()).find((o) => o.office === "REKTOR")!
+
+  test("data awal 9 jabatan", async () => {
+    await loginAs(c, "dekan.fmipa@unila.ac.id")
+    const all = await c.listOfficials()
+    expect(all.map((o) => o.office)).toEqual(["REKTOR", "FEB", "FH", "FKIP", "FP", "FT", "FISIP", "FMIPA", "FK"])
+    expect(all[0].periods).toEqual([{ id: expect.any(String), name: LUSMEILIA, from: "2023-01-01", to: null }])
+    expect(all[0].lastChange).toBeNull()
+  })
+
+  test("wewenang: admin lain fakultas 403, dekan/rektor 403", async () => {
+    await loginAs(c, "admin.ft@unila.ac.id")
+    const fmipa = (await c.listOfficials()).find((o) => o.office === "FMIPA")!
+    await expectApiError(c.correctOfficial("FMIPA", fmipa.periods[0].id, "Dr. Siapa Saja"), 403)
+    await loginAs(c, "dekan.fmipa@unila.ac.id")
+    await expectApiError(c.correctOfficial("FMIPA", fmipa.periods[0].id, "Dr. Siapa Saja"), 403)
+    await loginAs(c, "rektor@unila.ac.id")
+    await expectApiError(c.replaceOfficial("REKTOR", "Rektor Baru", "2026-11-01"), 403)
+  })
+
+  test("koreksi rektor oleh admin fakultas mana pun tercatat", async () => {
+    await loginAs(c, "admin.ft@unila.ac.id")
+    const r = await rektor()
+    const after = await c.correctOfficial("REKTOR", r.periods[0].id, "  Prof. Dr. Ir. Lusmeilia   Afriani ")
+    expect(after.periods[0].name).toBe("Prof. Dr. Ir. Lusmeilia Afriani")
+    expect(after.lastChange).toMatchObject({ kind: "KOREKSI", office: "REKTOR", before: LUSMEILIA, after: "Prof. Dr. Ir. Lusmeilia Afriani", by: "admin.ft (off-chain)" })
+    await expectApiError(c.correctOfficial("REKTOR", r.periods[0].id, "ab"), 400)
+  })
+
+  test("pergantian: tanggal tidak sah 409, sah menutup periode lama", async () => {
+    await loginAs(c, "admin.fmipa@unila.ac.id")
+    await expectApiError(c.replaceOfficial("REKTOR", "Rektor Baru, M.Sc.", "2026-11-12"), 409)
+    await expectApiError(c.replaceOfficial("REKTOR", "Rektor Baru, M.Sc.", "2023-01-01"), 409)
+    const after = await c.replaceOfficial("REKTOR", "Rektor Baru, M.Sc.", "2026-11-01")
+    expect(after.periods.map((p) => [p.name, p.from, p.to])).toEqual([
+      [LUSMEILIA, "2023-01-01", "2026-10-31"],
+      ["Rektor Baru, M.Sc.", "2026-11-01", null],
+    ])
+    expect(after.lastChange).toMatchObject({ kind: "PERGANTIAN", before: LUSMEILIA, after: "Rektor Baru, M.Sc.", by: "admin.fmipa (off-chain)" })
+  })
+
+  test("verifikasi memakai nama pejabat saat pengesahan; koreksi periode lama ikut", async () => {
+    let v = await c.verify("2017051008")
+    expect(v.dekanName).toBe("Dr. Eng. Heri Satria, S.Si., M.Si.")
+    expect(v.rektorName).toBe(LUSMEILIA)
+    await loginAs(c, "admin.fmipa@unila.ac.id")
+    await c.replaceOfficial("REKTOR", "Rektor Baru, M.Sc.", "2026-11-01")
+    const old = (await rektor()).periods[0]
+    await c.correctOfficial("REKTOR", old.id, "Prof. Lusmeilia Afriani (koreksi)")
+    await c.logout()
+    v = await c.verify("2017051008") // disahkan Rektor sekitar Oktober 2026
+    expect(v.rektorName).toBe("Prof. Lusmeilia Afriani (koreksi)")
+    await loginAs(c, "admin.fmipa@unila.ac.id")
+    const changes = await c.officialChanges("REKTOR")
+    expect(changes.map((x) => x.kind)).toEqual(["KOREKSI", "PERGANTIAN"])
+  })
 })

@@ -71,7 +71,7 @@ test("terdaftar: metadata publik dan penanda tangan, tanpa txId", async () => {
     expect(within(table).getByText(k)).toBeInTheDocument()
   expect(within(table).getByText("Nabila Azzahra")).toBeInTheDocument()
   const signers = screen.getByRole("region", { name: "Penanda tangan" })
-  expect(signers).toHaveTextContent("Rektor Contoh Periode 2023–2027")
+  expect(signers).toHaveTextContent("Prof. Dr. Ir. Lusmeilia Afriani, D.E.A., IPM., ASEAN Eng.")
   expect(signers).toHaveTextContent("Dekan Fakultas Matematika dan Ilmu Pengetahuan Alam")
   expect(signers).toHaveTextContent("WIB")
   expect(screen.queryByText(/ID transaksi/)).toBeNull()

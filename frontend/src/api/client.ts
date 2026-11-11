@@ -4,6 +4,9 @@ import type {
   Draft,
   LoginInput,
   NewDraft,
+  Office,
+  Official,
+  OfficialChange,
   QueueItem,
   RecordDetail,
   RecordFilter,
@@ -37,4 +40,9 @@ export interface ApiClient {
   searchPublic(q: string): Promise<{ candidates: VerifyCandidate[]; truncated: boolean }>
   verify(npm: string): Promise<VerifyResult>
   ledgerInfo(): Promise<{ channel: string; msp: string }>
+
+  listOfficials(): Promise<Official[]>
+  officialChanges(office: Office): Promise<OfficialChange[]>
+  correctOfficial(office: Office, periodId: string, name: string): Promise<Official>
+  replaceOfficial(office: Office, name: string, from: string): Promise<Official>
 }

@@ -3,6 +3,8 @@ import { normalizeName, normalizeNpm } from "@/domain/skpi"
 import type { ApiClient } from "../client"
 import { ApiError } from "../errors"
 import type { PublicSkpi, Role, SkpiRecord, User, VerifyResult } from "../types"
+import { canEditOffice, wibDate } from "@/domain/officials"
+import * as officials from "./officials"
 import { seedStore } from "./seed"
 import * as ops from "./store"
 
@@ -29,15 +31,7 @@ export const DEMO_ACCOUNTS: Account[] = [
   account("rektor@unila.ac.id", "rektor", null, "Rektor Universitas Lampung", "rektor@UnilaMSP"),
 ]
 
-/** Contoh tabel periode jabatan rektor (backend menyimpannya off-chain). */
-const REKTOR_PERIODS = [{ name: "Rektor Contoh Periode 2023–2027", from: "2023-01-01", to: "2027-12-31" }]
-
 const MAX_CANDIDATES = 10
-
-function rektorName(ts: string): string | null {
-  const day = ts.slice(0, 10)
-  return REKTOR_PERIODS.find((p) => p.from <= day && day <= p.to)?.name ?? null
-}
 
 const clone = <T>(v: T): T => structuredClone(v)
 
@@ -45,6 +39,7 @@ export function createMockClient(opts: { latencyMs?: number; seed?: boolean; now
   const latency = opts.latencyMs ?? 0
   const now = () => (opts.now ? opts.now() : new Date()).toISOString()
   const store = ops.createStore()
+  const people = officials.createOfficialsStore()
   if (opts.seed ?? true) seedStore(store, opts.now ? opts.now() : new Date())
   let session: Account | null = null
 
@@ -223,9 +218,9 @@ export function createMockClient(opts: { latencyMs?: number; seed?: boolean; now
       const key = normalizeNpm(npm)
       if (!/^\d{10}$/.test(key)) throw new ApiError(400, "VALIDATION", "NPM harus 10 digit angka.")
       const a = store.assets.get(key)
-      const none: VerifyResult = { status: "TIDAK_TERDAFTAR", data: null, rektorName: null }
+      const none: VerifyResult = { status: "TIDAK_TERDAFTAR", data: null, rektorName: null, dekanName: null }
       if (!a) return none
-      if (a.status === "MENUNGGU_REKTOR") return { status: "BELUM_SAH", data: null, rektorName: null }
+      if (a.status === "MENUNGGU_REKTOR") return { status: "BELUM_SAH", data: null, rektorName: null, dekanName: null }
       if (a.status !== "AKTIF" && a.status !== "DICABUT") return none
       const data: PublicSkpi = {
         npm: a.npm,
@@ -242,11 +237,35 @@ export function createMockClient(opts: { latencyMs?: number; seed?: boolean; now
       return clone({
         status: a.status === "AKTIF" ? "TERDAFTAR" : "DICABUT",
         data,
-        rektorName: rektorName(a.rektorTimestamp),
+        rektorName: officials.nameOf(people, "REKTOR", a.rektorTimestamp),
+        dekanName: officials.nameOf(people, a.facultyCode, a.issuedTimestamp),
       })
     },
     async ledgerInfo() {
       return { channel: "skpi-channel", msp: "UnilaMSP" }
+    },
+
+    async listOfficials() {
+      await wait()
+      requireUser()
+      return clone(officials.listOfficials(people))
+    },
+    async officialChanges(office) {
+      await wait()
+      requireUser()
+      return clone(officials.changesOf(people, office))
+    },
+    async correctOfficial(office, periodId, name) {
+      await wait()
+      const u = requireUser()
+      if (!canEditOffice(u, office)) throw new ApiError(403, "FORBIDDEN", "Anda hanya dapat mengubah Rektor dan Dekan fakultas Anda.")
+      return clone(officials.correct(people, office, periodId, name, u.actorId, now()))
+    },
+    async replaceOfficial(office, name, from) {
+      await wait()
+      const u = requireUser()
+      if (!canEditOffice(u, office)) throw new ApiError(403, "FORBIDDEN", "Anda hanya dapat mengubah Rektor dan Dekan fakultas Anda.")
+      return clone(officials.replace(people, office, name, from, u.actorId, now(), wibDate(now())))
     },
   }
 }

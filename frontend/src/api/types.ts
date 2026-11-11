@@ -126,6 +126,8 @@ export interface VerifyResult {
   status: VerifyStatus
   data: PublicSkpi | null
   rektorName: string | null
+  /** Nama dekan fakultas penerbit saat SahkanDekan (tabel periode jabatan). */
+  dekanName: string | null
 }
 
 export interface VerifyCandidate {
@@ -151,4 +153,33 @@ export interface NewDraft {
   npm: string
   data?: SkpiData
   reason?: string
+}
+
+/* ---------- Pejabat penanda tangan (spec 2026-11-11) ---------- */
+
+export type Office = "REKTOR" | FacultyCode
+
+/** Tanggal YYYY-MM-DD (WIB); `to` null = masih menjabat. */
+export interface OfficialPeriod {
+  id: string
+  name: string
+  from: string
+  to: string | null
+}
+
+export interface OfficialChange {
+  id: string
+  office: Office
+  kind: "KOREKSI" | "PERGANTIAN"
+  before: string
+  after: string
+  by: string
+  at: string
+}
+
+export interface Official {
+  office: Office
+  /** Urut lama → baru. */
+  periods: OfficialPeriod[]
+  lastChange: OfficialChange | null
 }

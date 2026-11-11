@@ -83,5 +83,9 @@ export function createHttpClient(base = "/api", fetchImpl: typeof fetch = fetch)
       })),
     verify: (npm) => request(`/verify/${enc(npm)}`),
     ledgerInfo: () => request("/ledger/info"),
+    listOfficials: () => request("/officials"),
+    officialChanges: (office) => request(`/officials/changes?office=${enc(office)}`),
+    correctOfficial: (office, periodId, name) => post(`/officials/${enc(office)}/corrections`, { periodId, name }),
+    replaceOfficial: (office, name, from) => post(`/officials/${enc(office)}/successions`, { name, from }),
   }
 }
