@@ -1,23 +1,24 @@
 import { Link } from "react-router"
-import { useSession } from "@/app/session"
-import { Brand } from "./ui/Brand"
+import { ChainStatus } from "./ChainStatus"
+import { Logo } from "./ui/Brand"
+import { cx } from "./ui/cx"
 
-const button =
-  "inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900 transition-[scale,background-color,border-color] duration-150 ease-out-ui hover:border-slate-300 hover:bg-slate-50 active:scale-[0.97]"
-
-export function PublicNav() {
-  const { user } = useSession()
+export function PublicNav({ tone = "light" }: { tone?: "light" | "dark" }) {
+  const dark = tone === "dark"
   return (
-    <header className="border-b border-slate-200 bg-white pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-10">
-        <Link to="/verifikasi" aria-label="Portal verifikasi">
-          <Brand />
+    <header className={cx("relative pt-[env(safe-area-inset-top)]", !dark && "border-b border-line bg-white")}>
+      <div className="mx-auto flex h-[72px] max-w-[1280px] items-center justify-between gap-3 px-5 sm:px-10 lg:px-20">
+        <Link to="/verifikasi" aria-label="Portal verifikasi SKPI" className="flex items-center gap-3">
+          <span className={cx("grid size-10 shrink-0 place-items-center rounded-[10px] bg-white p-1", !dark && "ring-1 ring-line")}>
+            <Logo />
+          </span>
+          <span className="leading-tight">
+            <span className={cx("block text-[15px] font-medium", dark ? "text-white" : "text-ink")}>SKPI Ledger</span>
+            <span className={cx("block text-[13px]", dark ? "text-white/50" : "text-slate-500")}>Universitas Lampung</span>
+          </span>
         </Link>
-        <div className="flex items-center gap-6">
-          <span className="hidden text-sm text-slate-500 md:inline">Portal Verifikasi SKPI</span>
-          <Link to={user ? "/ikhtisar" : "/masuk"} className={button}>
-            {user ? "Kembali ke ruang kerja" : "Masuk staf"}
-          </Link>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <ChainStatus tone={tone} />
         </div>
       </div>
     </header>

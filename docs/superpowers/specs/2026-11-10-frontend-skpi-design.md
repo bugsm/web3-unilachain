@@ -49,7 +49,7 @@ dipoles mengikuti prinsip skill Emil Kowalski (`emil-design-eng`, `animate`, `mo
 | `rektor` | Rektor | semua fakultas |
 | (publik) | Verifikator | tanpa login |
 
-Kontrol "Peran demo" di sidebar **dihapus**. Segmented control peran di layar Login **dipertahankan** (Admin Fakultas / Dekan / Rektor); backend memeriksa bahwa akun memang memegang peran itu.
+Kontrol "Peran demo" di sidebar **dihapus**. Sejak 11 Nov 2026 Login adalah **satu portal tanpa pilihan peran**: backend menentukan peran dari akun, frontend mengarahkan admin ke Ikhtisar dan dekan/rektor ke Antrean (spec `2026-11-11-modernisasi-ui-design.md`).
 
 ### 5.2 Status yang tampil di UI
 | Status UI | Lokasi | Asal |
@@ -94,7 +94,7 @@ dengan status 400/401/403/404/409/429/502/503 sesuai CLAUDE.md.
 
 | Metode & path | Peran | Isi |
 |---|---|---|
-| `POST /auth/login` `{identifier,password,role}` | publik | `→ {user}` |
+| `POST /auth/login` `{identifier,password}` | publik | `→ {user}` (peran dari akun, bukan dari klien) |
 | `GET /auth/me` / `POST /auth/logout` | login | `→ {user}` / 204 |
 | `GET /records?status&q` | semua staf | `→ SkpiRecord[]` (draft+aset dalam lingkup peran) |
 | `GET /records/:npm` | staf | `→ RecordDetail` (detail + `history[]` ledger dan off-chain) |
@@ -109,7 +109,7 @@ dengan status 400/401/403/404/409/429/502/503 sesuai CLAUDE.md.
 | `POST /records/:npm/rektor/reject` `{reason}` | rektor | `→ {txId}` |
 | `GET /verify?q=` | publik, rate limit | `→ {candidates[], truncated}` (maks 10; `truncated` = ada lebih dari 10 kecocokan) |
 | `GET /verify/:npm` | publik, rate limit | `→ VerifyResult {status, data, rektorName}` |
-| `GET /ledger/info` | publik | `→ {channel, msp, height?}` |
+| `GET /ledger/info` | publik | `→ {channel, msp, height, checkedAt}`; `height` dari `qscc GetChainInfo`, 503 bila peer tidak terjangkau |
 
 Bentuk tipe TypeScript-nya ditetapkan di `frontend/src/api/types.ts` dan menjadi acuan backend; `frontend/src/api/httpClient.ts`
 membuka pembungkus `{user}`/`{draft}` dan meratakan `data` draft ke body. Alasan (`reason`) dikirim sebagai satu baris karena

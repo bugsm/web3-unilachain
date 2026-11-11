@@ -42,7 +42,7 @@ test("tinjau pencabutan menampilkan alasan dan tombol bahaya", async () => {
   await user.click(within(row("Salsabila Putri Ramadhani")).getByRole("button", { name: "Tinjau" }))
   const dialog = await screen.findByRole("dialog")
   expect(within(dialog).getByText(/SKPI diterbitkan ganda/)).toBeInTheDocument()
-  expect(within(dialog).getByRole("button", { name: /Setujui \(CabutSKPI\)/ }).className).toContain("bg-[#E11D48]")
+  expect(within(dialog).getByRole("button", { name: /Setujui \(CabutSKPI\)/ }).className).toContain("bg-bad")
 })
 
 test("setujui pencatatan: satu transaksi walau klik ganda, toast, baris hilang", async () => {

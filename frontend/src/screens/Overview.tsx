@@ -102,7 +102,7 @@ export function Overview() {
         </div>
       )}
 
-      <section aria-label="Status SKPI per tahap" className="grid grid-cols-12 overflow-hidden rounded-xl border border-slate-200">
+      <section aria-label="Status SKPI per tahap" className="grid grid-cols-12 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
         <div className="col-span-12 grid grid-cols-1 sm:grid-cols-3 lg:col-span-9">
           {FLOW.map((f, i) => {
             const mine = f.status === stage
@@ -113,22 +113,22 @@ export function Overview() {
                 onClick={() => toList(f.status)}
                 className={cx(
                   "relative flex min-h-36 flex-col items-start px-6 py-6 text-left transition-colors duration-150 hover:bg-slate-50 sm:min-h-48",
-                  i > 0 && "border-t border-slate-200 sm:border-t-0 sm:border-l",
-                  mine && "bg-[#F8FAFC]",
+                  i > 0 && "border-t border-line sm:border-t-0 sm:border-l",
+                  mine && "bg-canvas",
                 )}
               >
-                {mine && <span className="absolute inset-x-0 top-0 h-0.5 bg-[#1D4ED8]" />}
+                {mine && <span className="absolute inset-x-0 top-0 h-0.5 bg-brand" />}
                 <span className="flex w-full flex-wrap items-center justify-between gap-2">
                   <StatusBadge status={f.status} />
-                  {mine && <span className="text-xs font-semibold text-[#1D4ED8]">Tahap Anda</span>}
+                  {mine && <span className="text-xs font-semibold text-brand">Tahap Anda</span>}
                 </span>
                 {/* Angka fungsional: tanpa animasi. */}
-                <span className="mt-auto pt-8 text-[52px] leading-none font-semibold tracking-[-0.04em] text-slate-900 tabular-nums">
+                <span className="mt-auto pt-8 text-[52px] leading-none font-semibold tracking-[-0.04em] text-ink tabular-nums">
                   {count(f.status)}
                 </span>
                 <span className="mt-2 text-sm text-slate-500">{f.hint}</span>
                 {i < FLOW.length - 1 && (
-                  <span className="absolute top-1/2 -right-3 z-10 hidden size-6 -translate-y-1/2 place-items-center rounded-full border border-slate-200 bg-white text-slate-400 sm:grid">
+                  <span className="absolute top-1/2 -right-3 z-10 hidden size-6 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-slate-400 sm:grid">
                     <ChevronRight size={14} />
                   </span>
                 )}
@@ -136,7 +136,7 @@ export function Overview() {
             )
           })}
         </div>
-        <div className="col-span-12 grid grid-cols-2 border-t border-slate-200 bg-[#F8FAFC] lg:col-span-3 lg:grid-cols-1 lg:border-t-0 lg:border-l">
+        <div className="col-span-12 grid grid-cols-2 border-t border-line bg-canvas lg:col-span-3 lg:grid-cols-1 lg:border-t-0 lg:border-l">
           <button
             type="button"
             onClick={() => toList("DICABUT")}
@@ -151,7 +151,7 @@ export function Overview() {
           <button
             type="button"
             onClick={() => toList("DITOLAK_DEKAN")}
-            className="flex items-center justify-between gap-4 border-l border-slate-200 px-6 py-5 text-left transition-colors duration-150 hover:bg-slate-100 lg:border-t lg:border-l-0"
+            className="flex items-center justify-between gap-4 border-l border-line px-6 py-5 text-left transition-colors duration-150 hover:bg-slate-100 lg:border-t lg:border-l-0"
           >
             <span>
               <Badge tone="muted">Ditolak</Badge>
@@ -165,7 +165,7 @@ export function Overview() {
       </section>
 
       <div className="mt-8 grid grid-cols-12 gap-6">
-        <section aria-labelledby={ids.table} className="col-span-12 overflow-hidden rounded-xl border border-slate-200 lg:col-span-8">
+        <section aria-labelledby={ids.table} className="col-span-12 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)] lg:col-span-8">
           <SectionTitle
             id={ids.table}
             title={tableTitle}
@@ -182,7 +182,7 @@ export function Overview() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
-                <thead className="bg-[#F8FAFC]">
+                <thead className="bg-canvas">
                   <tr>
                     <th className={th}>Lulusan</th>
                     <th className={th}>Nomor SKPI</th>
@@ -195,10 +195,10 @@ export function Overview() {
                     <tr
                       key={`${r.npm}-${tag ?? ""}`}
                       onClick={() => open(r.npm)}
-                      className="cursor-pointer border-t border-slate-200 transition-colors duration-150 hover:bg-slate-50"
+                      className="cursor-pointer border-t border-line transition-colors duration-150 hover:bg-slate-50"
                     >
                       <td className={td}>
-                        <p className="flex flex-wrap items-center gap-2 font-semibold text-slate-900">
+                        <p className="flex flex-wrap items-center gap-2 font-semibold text-ink">
                           {r.name}
                           {tag && <Tag>{tag}</Tag>}
                         </p>
@@ -218,18 +218,18 @@ export function Overview() {
           )}
         </section>
 
-        <section aria-labelledby={ids.feed} className="col-span-12 rounded-xl border border-slate-200 bg-[#F8FAFC] lg:col-span-4">
+        <section aria-labelledby={ids.feed} className="col-span-12 rounded-xl border border-line bg-canvas lg:col-span-4">
           <SectionTitle id={ids.feed} title="Aktivitas" aside={<span className="text-xs text-slate-500">7 peristiwa terbaru</span>} />
           <ol className="px-5">
             {(data.data?.activity ?? []).map((e) => (
               <li
                 key={`${e.npm}-${e.at}-${e.action}`}
-                className="grid grid-cols-[52px_1fr] gap-3 border-b border-slate-200 py-3.5 last:border-b-0"
+                className="grid grid-cols-[52px_1fr] gap-3 border-b border-line py-3.5 last:border-b-0"
               >
                 <span className="pt-0.5 font-mono text-[11px] text-slate-400 tabular-nums">{formatTime(e.at)}</span>
                 <div className="min-w-0">
                   <button type="button" onClick={() => navigate(`/daftar/${e.npm}`)} className="block w-full min-w-0 text-left">
-                    <p className="text-sm text-slate-900">
+                    <p className="text-sm text-ink">
                       <span className="font-semibold">{ACTION_LABEL[e.action]}</span>
                       <span className="text-slate-500"> · {e.name}</span>
                     </p>
@@ -239,7 +239,7 @@ export function Overview() {
                     {e.txId ? (
                       <Hash value={e.txId} />
                     ) : (
-                      <span className="text-[11px] font-medium tracking-wide text-slate-400 uppercase">off-chain</span>
+                      <span className="text-[11px] font-medium text-slate-400">off-chain</span>
                     )}
                   </div>
                 </div>

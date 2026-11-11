@@ -30,7 +30,7 @@ export function Hash({ value, full = false }: { value: string; full?: boolean })
         <Check
           size={13}
           aria-hidden
-          className={cx(icon, "text-[#059669]", copied ? "scale-100 opacity-100" : "scale-[0.8] opacity-0")}
+          className={cx(icon, "text-ok", copied ? "scale-100 opacity-100" : "scale-[0.8] opacity-0")}
         />
       </button>
     </span>

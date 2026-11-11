@@ -15,9 +15,9 @@ export function PageHeader({
     <header className="mb-10 grid grid-cols-12 items-end gap-6">
       <div className="col-span-12 lg:col-span-8">
         {eyebrow && (
-          <p className="mb-3 text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">{eyebrow}</p>
+          <p className="mb-3 flex items-center gap-2 text-[13px] text-slate-500"><span aria-hidden className="size-1.5 rounded-full bg-gold" />{eyebrow}</p>
         )}
-        <h1 className="text-[28px] leading-[1.15] font-semibold tracking-[-0.02em] text-slate-900 sm:text-[32px]">
+        <h1 className="display text-[30px] leading-[1.08] text-ink sm:text-[38px]">
           {title}
         </h1>
         {description && <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-500">{description}</p>}
@@ -31,8 +31,8 @@ export function PageHeader({
 
 export function SectionTitle({ title, aside, id }: { title: ReactNode; aside?: ReactNode; id?: string }) {
   return (
-    <div className="flex min-h-14 items-center justify-between gap-4 border-b border-slate-200 px-5">
-      <h2 id={id} className="text-sm font-semibold text-slate-900">
+    <div className="flex min-h-14 items-center justify-between gap-4 border-b border-line px-5">
+      <h2 id={id} className="text-sm font-semibold text-ink">
         {title}
       </h2>
       {aside}
@@ -41,5 +41,5 @@ export function SectionTitle({ title, aside, id }: { title: ReactNode; aside?: R
 }
 
 export const th =
-  "h-10 px-4 text-left text-[11px] font-semibold tracking-[0.08em] whitespace-nowrap text-slate-500 uppercase"
+  "h-10 px-4 text-left text-xs font-medium whitespace-nowrap text-slate-500"
 export const td = "px-4 py-3.5 align-middle"

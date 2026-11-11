@@ -1,15 +1,16 @@
 import type { ReactNode } from "react"
 import { PublicNav } from "@/components/PublicNav"
 
-export function PublicLayout({ children }: { children: ReactNode }) {
+/** `band`: pita gelap (LedgerBand, sudah memuat navigasi) di atas isi; tanpa itu navigasi terang biasa. */
+export function PublicLayout({ children, band }: { children: ReactNode; band?: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-white">
-      <PublicNav />
-      <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 sm:px-6 lg:px-10">{children}</main>
-      <footer className="border-t border-slate-200 pb-[env(safe-area-inset-bottom)] print:hidden">
-        <div className="mx-auto flex h-14 max-w-[1280px] items-center justify-between gap-4 px-4 text-xs text-slate-500 sm:px-6 lg:px-10">
-          <span>© Universitas Lampung</span>
-          <span className="font-mono">Hyperledger Fabric · skpi-channel</span>
+      {band ?? <PublicNav />}
+      <main className="mx-auto w-full max-w-[1280px] flex-1 px-5 sm:px-10 lg:px-20 print:max-w-none print:p-0">{children}</main>
+      <footer className="border-t border-line pb-[env(safe-area-inset-bottom)] print:hidden">
+        <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-5 text-[13px] text-slate-500 sm:px-10 lg:px-20">
+          <span>© Universitas Lampung · Biro Akademik dan Kemahasiswaan</span>
+          <span className="font-mono">Hyperledger Fabric · skpi-channel · UnilaMSP</span>
         </div>
       </footer>
     </div>

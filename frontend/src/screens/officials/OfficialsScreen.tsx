@@ -73,15 +73,15 @@ function HistoryDrawer({
     <Drawer open={!!office} onClose={onClose} label={`Riwayat ${label}`}>
       {official && (
         <div className="px-6 py-8 sm:px-8">
-          <p className="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">{label}</p>
-          <h2 className="mt-1 pr-10 text-2xl font-semibold tracking-[-0.02em] text-slate-900">Riwayat jabatan</h2>
+          <p className="text-[13px] font-semibold text-ink">{label}</p>
+          <h2 className="mt-1 pr-10 text-2xl font-semibold tracking-[-0.02em] text-ink">Riwayat jabatan</h2>
 
-          <h3 className="mt-8 mb-3 text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Periode</h3>
-          <ol aria-label="Periode jabatan" className="border-t border-slate-200">
+          <h3 className="mt-8 mb-3 text-[13px] font-semibold text-ink">Periode</h3>
+          <ol aria-label="Periode jabatan" className="border-t border-line">
             {[...official.periods].reverse().map((p) => (
-              <li key={p.id} className="flex items-start justify-between gap-4 border-b border-slate-200 py-3.5">
+              <li key={p.id} className="flex items-start justify-between gap-4 border-b border-line py-3.5">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-900">{p.name}</p>
+                  <p className="text-sm font-medium text-ink">{p.name}</p>
                   <p className="mt-0.5 text-xs text-slate-500 tabular-nums">
                     {formatDate(p.from)} – {p.to ? formatDate(p.to) : "sekarang"}
                   </p>
@@ -95,15 +95,15 @@ function HistoryDrawer({
             ))}
           </ol>
 
-          <h3 className="mt-10 mb-3 text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Perubahan</h3>
+          <h3 className="mt-10 mb-3 text-[13px] font-semibold text-ink">Perubahan</h3>
           {changes.error !== undefined && <LoadError error={changes.error} onRetry={changes.reload} />}
           {changes.data && changes.data.length === 0 && <p className="text-sm text-slate-500">Belum ada perubahan.</p>}
           {changes.data && changes.data.length > 0 && (
-            <ol aria-label="Perubahan" className="border-t border-slate-200">
+            <ol aria-label="Perubahan" className="border-t border-line">
               {changes.data.map((c) => (
-                <li key={c.id} className="border-b border-slate-200 py-3.5 text-sm">
+                <li key={c.id} className="border-b border-line py-3.5 text-sm">
                   <p>
-                    <span className="font-mono text-[12px] font-semibold text-slate-900">{c.kind}</span>
+                    <span className="font-mono text-[12px] font-semibold text-ink">{c.kind}</span>
                     <span className="text-slate-500"> · {c.by}</span>
                   </p>
                   <p className="mt-1 text-slate-700">
@@ -144,15 +144,15 @@ export function OfficialsScreen() {
         </div>
       )}
 
-      <section aria-labelledby={rektorId} className="rounded-xl border border-slate-200 p-6">
+      <section aria-labelledby={rektorId} className="rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)] p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 id={rektorId} className="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+            <h2 id={rektorId} className="text-[13px] font-semibold text-ink">
               Rektor
             </h2>
             {rektor && (
               <>
-                <p className="mt-2 text-xl font-semibold tracking-[-0.01em] text-slate-900">{current(rektor).name}</p>
+                <p className="mt-2 text-xl font-semibold tracking-[-0.01em] text-ink">{current(rektor).name}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Universitas Lampung · menjabat sejak {formatDate(current(rektor).from)}
                 </p>
@@ -166,10 +166,10 @@ export function OfficialsScreen() {
         </div>
       </section>
 
-      <div className="mt-8 overflow-hidden rounded-xl border border-slate-200">
+      <div className="mt-8 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
         <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[860px] text-sm">
-            <thead className="bg-[#F8FAFC]">
+            <thead className="bg-canvas">
               <tr>
                 <th className={th}>Fakultas</th>
                 <th className={th}>Dekan</th>
@@ -183,15 +183,15 @@ export function OfficialsScreen() {
               {FACULTIES.map((f) => {
                 const o = byOffice.get(f.code as FacultyCode)
                 return (
-                  <tr key={f.code} className={cx("border-t border-slate-200", f.code === user.faculty && "bg-[#F8FAFC]")}>
+                  <tr key={f.code} className={cx("border-t border-line", f.code === user.faculty && "bg-canvas")}>
                     <td className={td}>
-                      <p className="font-mono text-xs font-semibold text-slate-900">{f.code}</p>
+                      <p className="font-mono text-xs font-semibold text-ink">{f.code}</p>
                       <p className="text-xs text-slate-500">{facultyByCode(f.code).name}</p>
                     </td>
                     <td className={td}>
                       {o && (
                         <>
-                          <p className="font-medium text-slate-900">{current(o).name}</p>
+                          <p className="font-medium text-ink">{current(o).name}</p>
                           <p className="text-xs text-slate-500">sejak {formatDate(current(o).from)}</p>
                         </>
                       )}

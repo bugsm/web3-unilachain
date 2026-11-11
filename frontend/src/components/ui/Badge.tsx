@@ -4,17 +4,17 @@ import { STATUS_META, type Tone } from "@/domain/status"
 import { cx } from "./cx"
 
 export const TONE: Record<Tone, { badge: string; dot: string }> = {
-  pending: { badge: "bg-[#FEF3C7] text-[#B45309]", dot: "bg-[#D97706]" },
-  ok: { badge: "bg-[#D1FAE5] text-[#047857]", dot: "bg-[#059669]" },
-  revoked: { badge: "bg-[#FFE4E6] text-[#BE123C]", dot: "bg-[#E11D48]" },
-  muted: { badge: "bg-[#F1F5F9] text-[#475569]", dot: "bg-[#64748B]" },
+  pending: { badge: "bg-warn-soft text-warn", dot: "bg-warn" },
+  ok: { badge: "bg-ok-soft text-ok", dot: "bg-ok" },
+  revoked: { badge: "bg-bad-soft text-bad", dot: "bg-bad" },
+  muted: { badge: "bg-canvas text-slate-600", dot: "bg-slate-500" },
 }
 
 export function Badge({ tone, children }: { tone: Tone; children: ReactNode }) {
   return (
     <span
       className={cx(
-        "inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-[11px] font-semibold uppercase tracking-[0.06em] whitespace-nowrap",
+        "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium whitespace-nowrap",
         TONE[tone].badge,
       )}
     >

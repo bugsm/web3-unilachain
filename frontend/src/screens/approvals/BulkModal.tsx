@@ -82,19 +82,19 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
         )
       }
     >
-      <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200">
+      <ul className="divide-y divide-line rounded-lg border border-line">
         {(results ?? items.map((item) => ({ item, error: undefined as string | null | undefined }))).map(({ item, error }) => {
           const d = dataOf(item)
           return (
             <li key={keyOf(item)} className="flex items-start justify-between gap-4 px-4 py-2.5 text-sm">
               <span className="min-w-0">
-                <span className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
+                <span className="flex flex-wrap items-center gap-2 font-medium text-ink">
                   {d.name}
                   {item.kind === "draft" && (
                     <Tag tone={item.draft.type === "PERUBAHAN" ? "pending" : "muted"}>{DRAFT_TYPE_LABEL[item.draft.type]}</Tag>
                   )}
                 </span>
-                {error && <span className="mt-0.5 block text-xs text-[#E11D48]">{error}</span>}
+                {error && <span className="mt-0.5 block text-xs text-bad">{error}</span>}
               </span>
               <span className="flex shrink-0 items-center gap-2">
                 <span className="font-mono text-xs text-slate-500 tabular-nums">{d.skpiId}</span>
@@ -103,7 +103,7 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
                     aria-label={error ? "Gagal" : "Berhasil"}
                     className={cx(
                       "grid size-5 place-items-center rounded-full",
-                      error ? "bg-[#FFE4E6] text-[#E11D48]" : "bg-[#D1FAE5] text-[#059669]",
+                      error ? "bg-bad-soft text-bad" : "bg-ok-soft text-ok",
                     )}
                   >
                     {error ? <X size={12} strokeWidth={3} /> : <Check size={12} strokeWidth={3} />}

@@ -11,7 +11,7 @@ import { CircleAlert } from "lucide-react"
 import { cx } from "./cx"
 
 const control =
-  "w-full rounded-lg border bg-white text-sm text-slate-900 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-slate-400 focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 read-only:bg-slate-50 read-only:text-slate-500"
+  "w-full rounded-lg border bg-white text-sm text-ink outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-slate-400 focus:border-brand focus:ring-4 focus:ring-brand/10 read-only:bg-slate-50 read-only:text-slate-500"
 
 interface FieldIds {
   id: string
@@ -46,7 +46,7 @@ export function Field({
         {children}
       </FieldContext.Provider>
       {error ? (
-        <span id={noteId} role="alert" className="mt-1.5 flex items-center gap-1.5 text-xs text-[#E11D48]">
+        <span id={noteId} role="alert" className="mt-1.5 flex items-center gap-1.5 text-xs text-bad">
           <CircleAlert size={13} className="shrink-0" />
           {error}
         </span>
@@ -78,7 +78,7 @@ export function Input({ invalid, className, id, ...props }: InputHTMLAttributes<
     <input
       {...field}
       {...props}
-      className={cx(control, "h-10 px-3", bad ? "border-rose-300" : "border-slate-200", className)}
+      className={cx(control, "h-10 px-3", bad ? "border-rose-300" : "border-line", className)}
     />
   )
 }
@@ -89,7 +89,7 @@ export function Select({ invalid, className, id, ...props }: SelectHTMLAttribute
     <select
       {...field}
       {...props}
-      className={cx(control, "h-10 px-3", bad ? "border-rose-300" : "border-slate-200", className)}
+      className={cx(control, "h-10 px-3", bad ? "border-rose-300" : "border-line", className)}
     />
   )
 }
@@ -103,7 +103,7 @@ export function Textarea({ invalid, className, id, ...props }: TextareaHTMLAttri
       className={cx(
         control,
         "min-h-24 resize-y px-3 py-2.5 leading-relaxed",
-        bad ? "border-rose-300" : "border-slate-200",
+        bad ? "border-rose-300" : "border-line",
         className,
       )}
     />

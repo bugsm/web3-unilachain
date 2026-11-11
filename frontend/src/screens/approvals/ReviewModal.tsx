@@ -17,11 +17,11 @@ const FIELDS = ["name", "skpiId", "programStudy", "totalSKP"] as const
 
 function Meta({ rows }: { rows: Array<[string, string, boolean?]> }) {
   return (
-    <dl className="divide-y divide-slate-200 border-y border-slate-200 text-sm">
+    <dl className="divide-y divide-line border-y border-line text-sm">
       {rows.map(([k, v, mono]) => (
         <div key={k} className="grid grid-cols-[130px_1fr] gap-4 py-3">
           <dt className="text-slate-500">{k}</dt>
-          <dd className={cx("font-medium break-words text-slate-900", mono && "font-mono text-[13px] tabular-nums")}>{v}</dd>
+          <dd className={cx("font-medium break-words text-ink", mono && "font-mono text-[13px] tabular-nums")}>{v}</dd>
         </div>
       ))}
     </dl>
@@ -130,7 +130,7 @@ export function ReviewModal({
         <div className="grid grid-cols-12 gap-8">
           <div className="col-span-12 md:col-span-7">
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+              <p className="text-[13px] font-semibold text-ink">
                 {draft?.type === "PERUBAHAN" ? "Perubahan diusulkan" : "Metadata"}
               </p>
               {record && <StatusBadge status={record.status} />}
@@ -139,7 +139,7 @@ export function ReviewModal({
             {draft?.type === "PERUBAHAN" && draft.data ? (
               <table aria-label="Sebelum dan sesudah" className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-[11px] tracking-[0.08em] text-slate-500 uppercase">
+                  <tr className="text-left text-xs font-medium text-slate-500">
                     <th className="py-2 font-semibold">Atribut</th>
                     <th className="py-2 font-semibold">Sebelum</th>
                     <th className="py-2 font-semibold">Sesudah</th>
@@ -147,10 +147,10 @@ export function ReviewModal({
                 </thead>
                 <tbody>
                   {FIELDS.filter((f) => String(data[f]) !== String(draft.data![f])).map((f) => (
-                    <tr key={f} className="border-t border-slate-200">
+                    <tr key={f} className="border-t border-line">
                       <td className="py-3 text-slate-500">{FIELD_LABEL[f]}</td>
                       <td className="py-3 text-slate-500 line-through decoration-slate-300">{String(data[f])}</td>
-                      <td className="py-3 font-semibold text-slate-900">{String(draft.data![f])}</td>
+                      <td className="py-3 font-semibold text-ink">{String(draft.data![f])}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -170,8 +170,8 @@ export function ReviewModal({
             )}
 
             {isRevoke && draft?.reason && (
-              <div className="mt-6 rounded-lg border border-rose-200 bg-[#FFF1F2] px-5 py-4 text-sm">
-                <p className="font-semibold text-[#E11D48]">Alasan pencabutan dari admin</p>
+              <div className="mt-6 rounded-lg border border-rose-200 bg-bad-soft px-5 py-4 text-sm">
+                <p className="font-semibold text-bad">Alasan pencabutan dari admin</p>
                 <p className="mt-1 text-slate-700">{draft.reason}</p>
               </div>
             )}
@@ -188,15 +188,15 @@ export function ReviewModal({
               </Field>
             )}
             {error && (
-              <p role="alert" className="mt-5 rounded-lg border border-rose-200 bg-[#FFF1F2] px-4 py-3 text-sm text-rose-700">
+              <p role="alert" className="mt-5 rounded-lg border border-rose-200 bg-bad-soft px-4 py-3 text-sm text-rose-700">
                 {error}
               </p>
             )}
           </div>
           <div className="col-span-12 md:col-span-5">
-            <p className="mb-4 text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Rantai pengesahan</p>
+            <p className="mb-4 text-[13px] font-semibold text-ink">Rantai pengesahan</p>
             {record && <CustodySteps status={record.status} history={detail.data?.history ?? []} layout="vertical" />}
-            <p className="mt-6 border-t border-slate-200 pt-4 text-xs text-slate-500">
+            <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500">
               Anda menandatangani sebagai <span className="font-mono text-slate-700">{user.actorId}</span>
             </p>
           </div>

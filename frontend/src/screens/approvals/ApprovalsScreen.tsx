@@ -83,13 +83,13 @@ export function ApprovalsScreen() {
           />
         </div>
         <p className="text-sm text-slate-500">
-          <span className="font-semibold text-slate-900 tabular-nums">{queue.data ? rows.length : "–"}</span> menunggu
+          <span className="font-semibold text-ink tabular-nums">{queue.data ? rows.length : "–"}</span> menunggu
         </p>
         {/* Bilah aksi massal: transisi (bukan keyframe) agar dapat diinterupsi saat pilihan berubah cepat. */}
         <div
           inert={selected.size === 0}
           data-state={selected.size ? "open" : "closed"}
-          className="ml-auto flex items-center gap-3 rounded-lg bg-[#0F172A] py-1.5 pr-1.5 pl-4 text-sm text-white transition-[opacity,translate] duration-200 ease-out-ui data-[state=closed]:pointer-events-none data-[state=closed]:translate-y-2 data-[state=closed]:opacity-0"
+          className="ml-auto flex items-center gap-3 rounded-lg bg-ink py-1.5 pr-1.5 pl-4 text-sm text-white transition-[opacity,translate] duration-200 ease-out-ui data-[state=closed]:pointer-events-none data-[state=closed]:translate-y-2 data-[state=closed]:opacity-0"
         >
           <span className="tabular-nums">{selected.size} dipilih</span>
           <button type="button" onClick={() => setSelected(new Set())} className="text-slate-400 transition-colors hover:text-white">
@@ -107,19 +107,19 @@ export function ApprovalsScreen() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200">
+      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
         {queue.data && rows.length === 0 ? (
           <div className="px-6 py-20 text-center">
-            <span className="mx-auto grid size-10 place-items-center rounded-full bg-[#D1FAE5] text-[#059669]">
+            <span className="mx-auto grid size-10 place-items-center rounded-full bg-ok-soft text-ok">
               <Check size={18} strokeWidth={3} />
             </span>
-            <p className="mt-4 text-sm font-semibold text-slate-900">Antrean kosong</p>
+            <p className="mt-4 text-sm font-semibold text-ink">Antrean kosong</p>
             <p className="mt-1 text-sm text-slate-500">Semua SKPI pada tahap Anda telah ditinjau.</p>
           </div>
         ) : (
           <div className="overflow-x-auto overscroll-x-contain">
             <table className="w-full min-w-[900px] text-sm">
-              <thead className="bg-[#F8FAFC]">
+              <thead className="bg-canvas">
                 <tr>
                   <th className={cx(th, "w-12")}>
                     <input
@@ -127,7 +127,7 @@ export function ApprovalsScreen() {
                       aria-label="Pilih semua"
                       checked={allChecked}
                       onChange={() => setSelected(allChecked ? new Set() : new Set(selectable.map(keyOf)))}
-                      className="size-4 accent-[#1D4ED8]"
+                      className="size-4 accent-brand"
                     />
                   </th>
                   <th className={th}>Lulusan</th>
@@ -148,7 +148,7 @@ export function ApprovalsScreen() {
                   const key = keyOf(it)
                   const on = selected.has(key)
                   return (
-                    <tr key={key} className={cx("border-t border-slate-200 transition-colors duration-150", on ? "bg-[#EFF6FF]" : "hover:bg-slate-50")}>
+                    <tr key={key} className={cx("border-t border-line transition-colors duration-150", on ? "bg-brand-soft" : "hover:bg-slate-50")}>
                       <td className={td}>
                         <input
                           type="checkbox"
@@ -157,11 +157,11 @@ export function ApprovalsScreen() {
                           disabled={!bulkable(it)}
                           title={bulkable(it) ? undefined : "Pencabutan ditinjau satu per satu"}
                           onChange={() => toggle(key)}
-                          className="size-4 accent-[#1D4ED8]"
+                          className="size-4 accent-brand"
                         />
                       </td>
                       <td className={td}>
-                        <p className="font-semibold text-slate-900">{d.name}</p>
+                        <p className="font-semibold text-ink">{d.name}</p>
                         <p className="font-mono text-xs text-slate-500 tabular-nums">{d.npm}</p>
                       </td>
                       {isDekan && (
@@ -179,7 +179,7 @@ export function ApprovalsScreen() {
                         <p className="font-mono text-xs text-slate-500">Dekan {it.record?.facultyCode}</p>
                       </td>
                       <td className={cx(td, "text-right")}>
-                        <p className="font-mono text-slate-900 tabular-nums">{d.totalSKP}</p>
+                        <p className="font-mono text-ink tabular-nums">{d.totalSKP}</p>
                         <p className="text-xs text-slate-500">{predicateOf(d.totalSKP)}</p>
                       </td>
                       <td className={td}>{it.record && <CustodyBar status={it.record.status} />}</td>

@@ -11,7 +11,7 @@ import { VerifyResult } from "@/screens/verify/VerifyResult"
 import { useSession } from "./session"
 
 function Splash() {
-  return <div className="min-h-dvh bg-[#F8FAFC]" aria-busy="true" />
+  return <div className="min-h-dvh bg-canvas" aria-busy="true" />
 }
 
 /** Sesi wajib; peran diperiksa terhadap NAV sebelum Shell dirender. */

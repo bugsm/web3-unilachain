@@ -91,7 +91,8 @@ describe("bentuk respons dan body mengikuti spec §6", () => {
 
   test("login dan me membuka {user}", async () => {
     const { client, fetchImpl } = setup(json(200, { user }))
-    expect(await client.login({ identifier: "a@unila.ac.id", password: "x".repeat(8), role: "dekan" })).toEqual(user)
+    expect(await client.login({ identifier: "a@unila.ac.id", password: "x".repeat(8) })).toEqual(user)
+    expect(JSON.parse(call(fetchImpl)[1].body as string)).toEqual({ identifier: "a@unila.ac.id", password: "x".repeat(8) })
     fetchImpl.mockResolvedValueOnce(json(200, { user }))
     expect(await client.me()).toEqual(user)
   })

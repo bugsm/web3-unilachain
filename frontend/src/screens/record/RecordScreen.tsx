@@ -30,7 +30,7 @@ export function RecordScreen() {
         title="Ajukan SKPI ke Dekan"
         description="Draft disimpan di basis data aplikasi dan belum masuk blockchain. Data baru tercatat di ledger setelah Dekan menyetujui."
         actions={
-          <div className="inline-flex rounded-lg border border-slate-200 bg-[#F8FAFC] p-1" role="tablist" aria-label="Mode pencatatan">
+          <div className="inline-flex rounded-lg border border-line bg-canvas p-1" role="tablist" aria-label="Mode pencatatan">
             {(["single", "batch"] as const).map((m) => (
               <button
                 key={m}
@@ -40,7 +40,7 @@ export function RecordScreen() {
                 onClick={() => setMode(m)}
                 className={cx(
                   "h-8 rounded-md px-4 text-sm font-semibold transition-colors duration-150",
-                  mode === m ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-900",
+                  mode === m ? "bg-white text-ink shadow-sm ring-1 ring-line" : "text-slate-500 hover:text-ink",
                 )}
               >
                 {m === "single" ? "Satuan" : "Batch (CSV)"}

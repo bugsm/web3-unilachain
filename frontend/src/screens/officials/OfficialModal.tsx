@@ -76,7 +76,7 @@ export function OfficialModal({ action, onClose, onSaved }: { action: OfficialAc
           </Field>
         )}
         {error && (
-          <p role="alert" className="rounded-lg border border-rose-200 bg-[#FFF1F2] px-4 py-3 text-sm text-rose-700">
+          <p role="alert" className="rounded-lg border border-rose-200 bg-bad-soft px-4 py-3 text-sm text-rose-700">
             {error}
           </p>
         )}

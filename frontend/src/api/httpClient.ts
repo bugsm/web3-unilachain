@@ -1,6 +1,6 @@
 import type { ApiClient } from "./client"
 import { ApiError } from "./errors"
-import type { Draft, User, VerifyCandidate } from "./types"
+import type { Draft, LedgerInfo, User, VerifyCandidate } from "./types"
 
 const CODE_BY_STATUS: Record<number, string> = {
   400: "VALIDATION",
@@ -82,7 +82,7 @@ export function createHttpClient(base = "/api", fetchImpl: typeof fetch = fetch)
         truncated: r.truncated ?? false,
       })),
     verify: (npm) => request(`/verify/${enc(npm)}`),
-    ledgerInfo: () => request("/ledger/info"),
+    ledgerInfo: () => request<LedgerInfo>("/ledger/info"),
     listOfficials: () => request("/officials"),
     officialChanges: (office) => request(`/officials/changes?office=${enc(office)}`),
     correctOfficial: (office, periodId, name) => post(`/officials/${enc(office)}/corrections`, { periodId, name }),

@@ -36,6 +36,7 @@ cd frontend
 cp .env.example .env.local   # VITE_API_MODE=mock: klien API tiruan, tanpa backend
 npm ci
 npm run dev                  # http://localhost:5173, akun demo tampil di halaman masuk (mode mock)
+                             # mode mock: skpiChain(false) di konsol browser mensimulasikan peer terputus
 npm test -- --run            # Vitest + React Testing Library
 npm run build                # tsc + vite build; mode mock tidak pernah masuk bundle production
 ```

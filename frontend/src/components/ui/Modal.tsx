@@ -76,9 +76,9 @@ export function Modal({
         )}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-6 border-b border-slate-200 px-6 py-5">
+        <div className="flex items-start justify-between gap-6 border-b border-line px-6 py-5">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-base font-semibold text-slate-900">
+            <h2 id={titleId} className="text-base font-semibold text-ink">
               {title}
             </h2>
             {description && <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p>}
@@ -89,7 +89,7 @@ export function Modal({
         </div>
         <div className="overflow-y-auto px-6 py-5">{children}</div>
         {footer && (
-          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line bg-slate-50 px-6 py-4">
             {footer}
           </div>
         )}

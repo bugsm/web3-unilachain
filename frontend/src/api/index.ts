@@ -12,7 +12,15 @@ export * from "./types"
  */
 export const isMockMode = import.meta.env.DEV && import.meta.env.VITE_API_MODE === "mock"
 
+let devMock: ReturnType<typeof createMockClient> | undefined
+
 export function createDefaultClient(): ApiClient {
-  if (import.meta.env.DEV && import.meta.env.VITE_API_MODE === "mock") return createMockClient({ latencyMs: 350 })
+  if (import.meta.env.DEV && import.meta.env.VITE_API_MODE === "mock") {
+    // Satu instans (StrictMode memanggil inisialisasi useState dua kali).
+    const client = (devMock ??= createMockClient({ latencyMs: 350 }))
+    // Demo indikator rantai dari konsol browser: skpiChain(false) = peer terputus, skpiChain(true) = pulih.
+    ;(window as unknown as { skpiChain?: (online: boolean) => void }).skpiChain = (online) => client.setChainOnline(online)
+    return client
+  }
   return createHttpClient()
 }

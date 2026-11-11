@@ -163,3 +163,47 @@ test("tanpa nama dekan tetap menampilkan jabatan penerbit", async () => {
   await screen.findByRole("heading", { level: 1, name: "Terdaftar" })
   expect(screen.getByRole("region", { name: "Penanda tangan" })).toHaveTextContent("Dekan Fakultas Matematika dan Ilmu Pengetahuan Alam")
 })
+
+describe("lembar cetak (satu halaman A4)", () => {
+  const sheet = () => screen.getByRole("document", { name: "Hasil Verifikasi SKPI" })
+
+  test("terdaftar: data, kedua pejabat, blok, referensi, dan QR", async () => {
+    await renderApp("/verifikasi/2017051008")
+    await screen.findByRole("heading", { level: 1, name: "Terdaftar" })
+    const doc = sheet()
+    expect(doc).toHaveTextContent("Universitas Lampung")
+    expect(doc).toHaveTextContent("2017051008")
+    expect(doc).toHaveTextContent("001/UN26.17/SKPI/2026")
+    expect(doc).toHaveTextContent("Nabila Azzahra")
+    expect(doc).toHaveTextContent("Dr. Eng. Heri Satria, S.Si., M.Si.")
+    expect(doc).toHaveTextContent("Prof. Dr. Ir. Lusmeilia Afriani")
+    expect(doc).toHaveTextContent(/Nomor referensi\s*VRF\/2017051008\/\d{12}/)
+    await vi.waitFor(() => expect(doc).toHaveTextContent(/Blok terbaru saat diperiksa\s*:\s*#[\d.]+/))
+    expect(await within(doc).findByRole("img", { name: "Kode QR verifikasi" })).toBeInTheDocument()
+    expect(doc).toHaveTextContent("/verifikasi/2017051008")
+  })
+
+  test("tidak terdaftar: tetap dapat dicetak sebagai bukti hasil pemeriksaan, tanpa tabel data", async () => {
+    await renderApp("/verifikasi/2017059999")
+    await screen.findByRole("heading", { level: 1, name: "Tidak terdaftar" })
+    const doc = sheet()
+    expect(doc).toHaveTextContent("TIDAK TERDAFTAR")
+    expect(doc).toHaveTextContent("2017059999")
+    expect(within(doc).queryByRole("table")).toBeNull()
+  })
+
+  test("tombol cetak memanggil dialog cetak browser", async () => {
+    const print = vi.spyOn(window, "print").mockImplementation(() => undefined)
+    const { user } = await renderApp("/verifikasi/2017051008")
+    await screen.findByRole("heading", { level: 1, name: "Terdaftar" })
+    await user.click(screen.getByRole("button", { name: /Cetak hasil/ }))
+    expect(print).toHaveBeenCalledTimes(1)
+  })
+})
+
+test("header portal publik tanpa tautan masuk staf, dengan status rantai", async () => {
+  await portal()
+  expect(screen.queryByRole("link", { name: /Masuk staf/ })).toBeNull()
+  expect(screen.getByRole("status", { name: "Status blockchain" })).toBeInTheDocument()
+  expect(screen.getByRole("figure", { name: "Alur verifikasi" })).toBeInTheDocument()
+})

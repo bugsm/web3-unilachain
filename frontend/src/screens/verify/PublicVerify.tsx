@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react"
+import { useState, type CSSProperties, type FormEvent } from "react"
 import { useNavigate, useSearchParams } from "react-router"
 import { ArrowRight, Lock } from "lucide-react"
 import type { Tone } from "@/domain/status"
@@ -7,6 +7,8 @@ import { useAsync } from "@/app/useAsync"
 import { Badge, Button, Field, Input } from "@/components/ui"
 import { LoadError } from "@/components/ui/LoadError"
 import { normalizeName, normalizeNpm } from "@/domain/skpi"
+import { HeroSplit, LedgerBand } from "@/components/LedgerHero"
+import { VerifyFlow } from "@/components/SigningFlow"
 import { Candidates } from "./Candidates"
 import { PublicLayout } from "./PublicLayout"
 
@@ -15,12 +17,6 @@ const SAMPLES = [
   { label: "Dicabut", q: "2017051042" },
   { label: "Belum sah", q: "2017051056" },
   { label: "Nama ganda", q: "Rizky Maulana" },
-]
-
-const CHECKS = [
-  ["Identitas lulusan", "NPM dan nama tercatat di ledger."],
-  ["Dua tanda tangan", "Dekan fakultas penerbit dan Rektor telah mengesahkan SKPI."],
-  ["Status terkini", "SKPI masih berlaku, sedang menunggu pengesahan, atau telah dicabut."],
 ]
 
 const LEGEND: Array<[Tone, string, string]> = [
@@ -59,93 +55,116 @@ export function PublicVerify() {
     else setParams({ q: name })
   }
 
+  const d = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties
+
+  const text = (
+    <>
+      <p className="enter inline-flex h-7 items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-3 text-[13px] text-white/70">
+        <span aria-hidden className="size-1.5 rounded-full bg-gold" />
+        Portal verifikasi publik, tanpa akun
+      </p>
+      <h1 className="display enter mt-6 text-[40px] leading-[1.04] sm:text-[52px] lg:text-[58px]" style={d(80)}>
+        Periksa keabsahan SKPI lulusan Universitas Lampung.
+      </h1>
+      <p className="enter mt-6 max-w-[540px] text-[17px] leading-relaxed text-white/60" style={d(160)}>
+        Masukkan NPM atau nama lengkap yang tercetak pada dokumen. Jawabannya dibaca langsung dari ledger, bukan dari salinan dokumen.
+      </p>
+      <VerifyFlow className="enter mt-10 max-sm:hidden" />
+    </>
+  )
+
+  const panel = (
+    <>
+      <form
+        onSubmit={submit}
+        noValidate
+        className="enter rounded-[20px] bg-white p-7 text-ink shadow-[0_40px_100px_-30px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.08)] sm:p-9"
+        style={d(120)}
+      >
+        <p className="display text-[28px] leading-[1.1]">Data dari dokumen</p>
+        <p className="mt-3 text-[15px] leading-relaxed text-slate-600">Isi NPM atau nama lengkap lulusan sesuai dokumen.</p>
+        <div className="mt-8">
+          <Field label="NPM atau nama lulusan" error={error} hint="NPM 10 digit memberi hasil paling tepat.">
+            <Input
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Contoh: 2017051008 atau Nabila Azzahra"
+              autoComplete="off"
+              spellCheck={false}
+              className="h-12 rounded-xl px-4 text-[15px]"
+            />
+          </Field>
+        </div>
+        <Button type="submit" variant="primary" size="lg" className="group mt-8 h-12 w-full rounded-xl text-[15px]" loading={search.loading && !!q} loadingLabel="Mencari…">
+          Verifikasi dokumen <ArrowRight size={17} className="transition-[translate] duration-150 ease-out-ui group-hover:translate-x-[3px]" />
+        </Button>
+        <p className="mt-6 flex items-center gap-2 border-t border-line pt-5 text-[14px] text-slate-600">
+          <Lock size={14} className="shrink-0" /> Hanya membaca ledger, dibatasi per menit.
+        </p>
+      </form>
+
+      {q && search.error !== undefined && (
+        <div className="mt-4 rounded-2xl bg-white p-1 text-ink">
+          <LoadError error={search.error} onRetry={search.reload} />
+        </div>
+      )}
+      {current && <Candidates q={q} candidates={current.candidates} truncated={current.truncated} />}
+    </>
+  )
+
+  const demo =
+    import.meta.env.DEV && import.meta.env.VITE_API_MODE === "mock" ? (
+      <div className="text-[13px] text-white/55">
+        <p>Data uji untuk demo</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {SAMPLES.map((s) => (
+            <button
+              key={s.label}
+              type="button"
+              onClick={() => {
+                setValue(s.q)
+                setError(undefined)
+              }}
+              className="h-8 rounded-full border border-white/12 px-3 text-white/75 transition-colors hover:border-white/30 hover:text-white"
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    ) : undefined
+
+  const band = (
+    <LedgerBand
+      full
+      foot={
+        <>
+          <a href="#cara-membaca" className="transition-colors hover:text-white">
+            Cara membaca hasil ↓
+          </a>
+          <span className="font-mono">Hyperledger Fabric · skpi-channel</span>
+        </>
+      }
+    >
+      <HeroSplit text={text} panel={panel} extra={demo} />
+    </LedgerBand>
+  )
+
   return (
-    <PublicLayout>
-      <section className="grid grid-cols-12 gap-6 py-12 sm:py-16 lg:py-24">
-        <div className="col-span-12 lg:col-span-6">
-          <p className="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Verifikasi publik · tanpa akun</p>
-          <h1 className="mt-5 text-[36px] leading-[1.05] font-semibold tracking-[-0.035em] text-slate-900 sm:text-[44px] lg:text-[56px]">
-            Periksa keabsahan SKPI lulusan Universitas Lampung.
-          </h1>
-          <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-slate-500">
-            Masukkan NPM atau nama lengkap yang tercetak pada dokumen yang Anda terima. Status dibaca langsung dari ledger UnilaMSP,
-            bukan dari salinan dokumen.
-          </p>
-          <ol className="mt-12 max-w-lg border-t border-slate-200">
-            {CHECKS.map(([title, desc], i) => (
-              <li key={title} className="grid grid-cols-[40px_1fr] gap-3 border-b border-slate-200 py-4 text-[15px]">
-                <span className="font-mono text-xs leading-6 text-slate-400 tabular-nums">0{i + 1}</span>
-                <p className="text-slate-600">
-                  <span className="font-semibold text-slate-900">{title}</span> {desc}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="col-span-12 lg:col-span-5 lg:col-start-8">
-          <form onSubmit={submit} noValidate className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-6 sm:p-8 lg:mt-10">
-            <p className="text-sm font-semibold text-slate-900">Data dari dokumen</p>
-            <p className="mt-1 text-sm text-slate-500">Isi NPM atau nama lengkap lulusan sesuai dokumen.</p>
-            <div className="mt-7">
-              <Field label="NPM atau nama lulusan" error={error} hint="NPM 10 digit memberi hasil paling tepat.">
-                <Input
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  placeholder="Contoh: 2017051008 atau Nabila Azzahra"
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="h-11 bg-white"
-                />
-              </Field>
-            </div>
-            <Button type="submit" variant="primary" size="lg" className="mt-7 w-full" loading={search.loading && !!q} loadingLabel="Mencari…">
-              Verifikasi dokumen <ArrowRight size={16} />
-            </Button>
-            <p className="mt-5 flex items-center gap-2 text-xs text-slate-500">
-              <Lock size={13} /> Kueri hanya-baca; dibatasi jumlah permintaan per menit.
-            </p>
-            {import.meta.env.DEV && import.meta.env.VITE_API_MODE === "mock" && (
-              <div className="mt-6 border-t border-slate-200 pt-5">
-                <p className="text-xs text-slate-500">Data uji untuk demo</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {SAMPLES.map((s) => (
-                    <button
-                      key={s.label}
-                      type="button"
-                      onClick={() => {
-                        setValue(s.q)
-                        setError(undefined)
-                      }}
-                      className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition-[scale,border-color] duration-150 hover:border-slate-300 active:scale-[0.97]"
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </form>
-
-          {q && search.error !== undefined && (
-            <div className="mt-6">
-              <LoadError error={search.error} onRetry={search.reload} />
-            </div>
-          )}
-          {current && <Candidates q={q} candidates={current.candidates} truncated={current.truncated} />}
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 py-12">
+    <PublicLayout band={band}>
+      <section id="cara-membaca" className="scroll-mt-6 py-16 lg:py-20">
         <div className="grid grid-cols-12 gap-6">
-          <h2 className="col-span-12 text-sm font-semibold text-slate-900 lg:col-span-3">Cara membaca hasil</h2>
-          <dl className="col-span-12 divide-y divide-slate-200 border-y border-slate-200 lg:col-span-9">
+          <div className="col-span-12 lg:col-span-4">
+            <h2 className="display text-[28px] leading-tight text-ink">Cara membaca hasil</h2>
+            <p className="mt-3 max-w-xs text-[15px] text-slate-600">Empat jawaban yang mungkin, langsung dari status SKPI di ledger.</p>
+          </div>
+          <dl className="col-span-12 divide-y divide-line border-y border-line lg:col-span-8">
             {LEGEND.map(([tone, label, desc]) => (
               <div key={label} className="grid grid-cols-12 items-center gap-4 py-4">
                 <dt className="col-span-12 sm:col-span-3">
                   <Badge tone={tone}>{label}</Badge>
                 </dt>
-                <dd className="col-span-12 text-sm text-slate-600 sm:col-span-9">{desc}</dd>
+                <dd className="col-span-12 text-[15px] text-slate-600 sm:col-span-9">{desc}</dd>
               </div>
             ))}
           </dl>

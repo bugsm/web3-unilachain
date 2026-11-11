@@ -79,7 +79,7 @@ export function DraftFormModal({
     >
       {mode === "perbaiki" && draft?.rejectReason && (
         <div className="mb-6 border-l-2 border-slate-300 py-1 pl-4 text-sm">
-          <p className="font-semibold text-slate-900">Alasan penolakan Dekan</p>
+          <p className="font-semibold text-ink">Alasan penolakan Dekan</p>
           <p className="mt-1 text-slate-600">{draft.rejectReason}</p>
         </div>
       )}
@@ -108,12 +108,12 @@ export function DraftFormModal({
           hint={predicate ? `Otomatis · rentang ${predicateRange(predicate)} SKP` : "Otomatis dari total SKP"}
           className="col-span-2 sm:col-span-1"
         >
-          <Input value={predicate ?? ""} placeholder="—" readOnly tabIndex={-1} className="bg-[#F8FAFC] font-semibold" />
+          <Input value={predicate ?? ""} placeholder="—" readOnly tabIndex={-1} className="bg-canvas font-semibold" />
         </Field>
       </div>
       {mode === "perubahan" && !changed && <p className="mt-5 text-xs text-slate-500">Ubah setidaknya satu atribut.</p>}
       {error && (
-        <p role="alert" className="mt-5 rounded-lg border border-rose-200 bg-[#FFF1F2] px-4 py-3 text-sm text-rose-700">
+        <p role="alert" className="mt-5 rounded-lg border border-rose-200 bg-bad-soft px-4 py-3 text-sm text-rose-700">
           {error}
         </p>
       )}

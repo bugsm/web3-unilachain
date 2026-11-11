@@ -6,11 +6,11 @@ import { cx } from "./ui/cx"
 import { Hash } from "./ui/Hash"
 
 const SEGMENT: Record<StageState, string> = {
-  done: "bg-[#1D4ED8]",
-  current: "bg-[#D97706]",
+  done: "bg-brand",
+  current: "bg-warn",
   pending: "bg-slate-200",
   rejected: "bg-slate-400",
-  revoked: "bg-[#E11D48]",
+  revoked: "bg-bad",
 }
 
 interface Props {
@@ -37,25 +37,25 @@ function StageNode({ state }: { state: StageState }) {
   const base = "relative z-10 grid size-7 shrink-0 place-items-center rounded-full"
   if (state === "done")
     return (
-      <span className={cx(base, "bg-[#1D4ED8] text-white")}>
+      <span className={cx(base, "bg-brand text-white")}>
         <Check size={14} strokeWidth={3} />
       </span>
     )
   if (state === "current")
     return (
-      <span className={cx(base, "bg-[#FEF3C7] text-[#D97706] ring-4 ring-[#FEF3C7]/60")}>
+      <span className={cx(base, "bg-warn-soft text-warn ring-4 ring-warn-soft/60")}>
         <Clock3 size={14} strokeWidth={2.5} />
       </span>
     )
   if (state === "rejected")
     return (
-      <span className={cx(base, "bg-[#F1F5F9] text-[#64748B]")}>
+      <span className={cx(base, "bg-canvas text-slate-500")}>
         <X size={14} strokeWidth={3} />
       </span>
     )
   if (state === "revoked")
     return (
-      <span className={cx(base, "bg-[#FFE4E6] text-[#E11D48]")}>
+      <span className={cx(base, "bg-bad-soft text-bad")}>
         <Ban size={14} strokeWidth={2.5} />
       </span>
     )
@@ -71,13 +71,13 @@ export function CustodySteps({ status, history = [], layout = "horizontal" }: Pr
           <li key={s.key} className="relative flex gap-4 pb-6 last:pb-0">
             {i < stages.length - 1 && (
               <span
-                className={cx("absolute top-7 bottom-0 left-[13px] w-0.5", s.state === "done" ? "bg-[#1D4ED8]" : "bg-slate-200")}
+                className={cx("absolute top-7 bottom-0 left-[13px] w-0.5", s.state === "done" ? "bg-brand" : "bg-slate-200")}
               />
             )}
             <StageNode state={s.state} />
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-ink">
                   {s.label} <span className="font-normal text-slate-500">· {s.sub}</span>
                 </p>
                 <span className="shrink-0 text-xs font-medium text-slate-500">{s.stateLabel}</span>
@@ -98,7 +98,7 @@ export function CustodySteps({ status, history = [], layout = "horizontal" }: Pr
                     <p className="text-slate-400">off-chain · belum ada transaksi</p>
                   )}
                   {s.event.note && (
-                    <p className="border-l-2 border-slate-200 pl-3 leading-relaxed text-slate-600">{s.event.note}</p>
+                    <p className="border-l-2 border-line pl-3 leading-relaxed text-slate-600">{s.event.note}</p>
                   )}
                 </div>
               )}
@@ -114,10 +114,10 @@ export function CustodySteps({ status, history = [], layout = "horizontal" }: Pr
           <div className="flex items-center">
             <StageNode state={s.state} />
             {i < stages.length - 1 && (
-              <span className={cx("ml-2 h-0.5 flex-1", s.state === "done" ? "bg-[#1D4ED8]" : "bg-slate-200")} />
+              <span className={cx("ml-2 h-0.5 flex-1", s.state === "done" ? "bg-brand" : "bg-slate-200")} />
             )}
           </div>
-          <p className="mt-3 text-sm font-semibold text-slate-900">{s.label}</p>
+          <p className="mt-3 text-sm font-semibold text-ink">{s.label}</p>
           <p className="text-xs text-slate-500">{s.stateLabel}</p>
           {s.event && <p className="mt-1 text-xs text-slate-400 tabular-nums">{formatDate(s.event.at)}</p>}
         </li>

@@ -58,7 +58,7 @@ export function RegistryScreen() {
         description="Seluruh SKPI dalam lingkup Anda: draft off-chain dan aset ledger beserta status terkini. Riwayat ledger diambil dari histori kunci NPM dan tidak dapat diubah."
       />
 
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line">
         <nav className="-mb-px flex gap-6 overflow-x-auto" aria-label="Filter status">
           {TABS.map((t) => {
             const n = records.filter((r) => t.match(r.status)).length
@@ -72,11 +72,11 @@ export function RegistryScreen() {
                 className={cx(
                   // Tab: tanpa animasi indikator (sering dipakai); hanya warna.
                   "flex h-11 items-center gap-2 border-b-2 text-sm whitespace-nowrap transition-colors duration-150",
-                  active ? "border-[#1D4ED8] font-semibold text-slate-900" : "border-transparent text-slate-500 hover:text-slate-900",
+                  active ? "border-brand font-semibold text-ink" : "border-transparent text-slate-500 hover:text-ink",
                 )}
               >
                 {t.label}
-                <span className={cx("rounded px-1.5 text-xs tabular-nums", active ? "bg-[#EFF6FF] text-[#1D4ED8]" : "bg-slate-100 text-slate-500")}>
+                <span className={cx("rounded px-1.5 text-xs tabular-nums", active ? "bg-brand-soft text-brand" : "bg-slate-100 text-slate-500")}>
                   {list.data ? n : "–"}
                 </span>
               </button>
@@ -110,10 +110,10 @@ export function RegistryScreen() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200">
+      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
         <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[1000px] text-sm">
-            <thead className="bg-[#F8FAFC]">
+            <thead className="bg-canvas">
               <tr>
                 <th className={th}>Lulusan</th>
                 <th className={th}>Nomor SKPI</th>
@@ -134,17 +134,17 @@ export function RegistryScreen() {
                   <tr
                     key={r.npm}
                     onClick={() => navigate({ pathname: `/daftar/${r.npm}`, search })}
-                    className="cursor-pointer border-t border-slate-200 transition-colors duration-150 hover:bg-slate-50"
+                    className="cursor-pointer border-t border-line transition-colors duration-150 hover:bg-slate-50"
                   >
                     <td className={td}>
-                      <p className="font-semibold text-slate-900">{r.name}</p>
+                      <p className="font-semibold text-ink">{r.name}</p>
                       <p className="font-mono text-xs text-slate-500 tabular-nums">
                         {r.npm} · {r.programStudy}
                       </p>
                     </td>
                     <td className={cx(td, "font-mono text-xs text-slate-700 tabular-nums")}>{r.skpiId}</td>
                     <td className={cx(td, "text-right")}>
-                      <p className="font-mono text-slate-900 tabular-nums">{r.totalSKP}</p>
+                      <p className="font-mono text-ink tabular-nums">{r.totalSKP}</p>
                       <p className="text-xs text-slate-500">{r.predicate}</p>
                     </td>
                     <td className={cx(td, "text-slate-600 tabular-nums")}>{r.issuedTimestamp ? formatDate(r.issuedTimestamp) : "—"}</td>
@@ -168,7 +168,7 @@ export function RegistryScreen() {
           </table>
         </div>
         {list.data && rows.length === 0 && <p className="px-6 py-16 text-center text-sm text-slate-500">Tidak ada SKPI yang cocok dengan filter.</p>}
-        <div className="flex items-center justify-between border-t border-slate-200 bg-[#F8FAFC] px-4 py-3 text-xs text-slate-500">
+        <div className="flex items-center justify-between border-t border-line bg-canvas px-4 py-3 text-xs text-slate-500">
           <span>
             Menampilkan <span className="tabular-nums">{rows.length}</span> dari <span className="tabular-nums">{records.length}</span> SKPI
           </span>

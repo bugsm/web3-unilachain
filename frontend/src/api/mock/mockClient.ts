@@ -35,13 +35,24 @@ const MAX_CANDIDATES = 10
 
 const clone = <T>(v: T): T => structuredClone(v)
 
-export function createMockClient(opts: { latencyMs?: number; seed?: boolean; now?: () => Date } = {}): ApiClient {
+/** Blok sebelum transaksi SKPI pertama (genesis, konfigurasi kanal, deploy chaincode). */
+const BASE_HEIGHT = 1200
+
+/** Kendali khusus mock untuk demo/test; tidak ada di klien http. */
+export interface MockControls {
+  setChainOnline(online: boolean): void
+}
+
+export function createMockClient(
+  opts: { latencyMs?: number; seed?: boolean; now?: () => Date } = {},
+): ApiClient & MockControls {
   const latency = opts.latencyMs ?? 0
   const now = () => (opts.now ? opts.now() : new Date()).toISOString()
   const store = ops.createStore()
   const people = officials.createOfficialsStore()
   if (opts.seed ?? true) seedStore(store, opts.now ? opts.now() : new Date())
   let session: Account | null = null
+  let chainOnline = true
 
   async function wait() {
     if (latency > 0) await new Promise((r) => setTimeout(r, latency))
@@ -69,12 +80,11 @@ export function createMockClient(opts: { latencyMs?: number; seed?: boolean; now
   const toUser = ({ email: _e, ...u }: Account): User => clone(u)
 
   return {
-    async login({ identifier, password, role }) {
+    async login({ identifier, password }) {
       await wait()
       const acc = DEMO_ACCOUNTS.find((a) => a.email === identifier.trim().toLowerCase())
       if (!acc || password !== DEMO_PASSWORD)
         throw new ApiError(401, "INVALID_CREDENTIALS", "Email atau kata sandi salah.")
-      if (acc.role !== role) throw new ApiError(403, "ROLE_MISMATCH", "Akun ini tidak memegang peran tersebut. Pilih peran yang sesuai.")
       session = acc
       return toUser(acc)
     },
@@ -242,7 +252,14 @@ export function createMockClient(opts: { latencyMs?: number; seed?: boolean; now
       })
     },
     async ledgerInfo() {
-      return { channel: "skpi-channel", msp: "UnilaMSP" }
+      await wait()
+      if (!chainOnline) throw new ApiError(503, "UNAVAILABLE", "Peer tidak terjangkau.")
+      // Satu blok per transaksi ledger (perkiraan; SmartBFT dapat membatch beberapa transaksi).
+      const txs = [...store.history.values()].flat().filter((h) => h.kind === "ledger").length
+      return { channel: "skpi-channel", msp: "UnilaMSP", height: BASE_HEIGHT + txs, checkedAt: now() }
+    },
+    setChainOnline(online: boolean) {
+      chainOnline = online
     },
 
     async listOfficials() {

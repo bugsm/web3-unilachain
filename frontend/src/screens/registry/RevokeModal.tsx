@@ -62,7 +62,7 @@ export function RevokeModal({ record, onClose, onSaved }: { record: SkpiRecord; 
           <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} inputMode="numeric" autoComplete="off" className="font-mono tabular-nums" />
         </Field>
         {error && (
-          <p role="alert" className="rounded-lg border border-rose-200 bg-[#FFF1F2] px-4 py-3 text-sm text-rose-700">
+          <p role="alert" className="rounded-lg border border-rose-200 bg-bad-soft px-4 py-3 text-sm text-rose-700">
             {error}
           </p>
         )}

@@ -5,18 +5,19 @@ import type { ApiClient } from "@/api/client"
 import { createDefaultClient } from "@/api"
 import { AppRoutes } from "@/app/router"
 import { SessionProvider } from "@/app/session"
+import { ChainStatusProvider } from "@/app/useChainStatus"
 
 export function AppProviders({ client, children }: { client: ApiClient; children: ReactNode }) {
   return (
     <SessionProvider client={client}>
-      {children}
+      <ChainStatusProvider>{children}</ChainStatusProvider>
       <Toaster
         position="bottom-right"
         offset={24}
         toastOptions={{
           classNames: {
-            toast: "!rounded-lg !border-0 !bg-[#0F172A] !text-white !shadow-xl !font-sans",
-            description: "!text-slate-300",
+            toast: "!rounded-lg !border-0 !bg-ink !text-white !shadow-xl !font-sans",
+            description: "!text-white/70",
           },
         }}
       />

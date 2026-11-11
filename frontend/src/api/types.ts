@@ -142,10 +142,22 @@ export interface BatchResult {
   errors: { index: number; npm: string; message: string }[]
 }
 
+/**
+ * Status ledger untuk indikator rantai. `height` dari qscc GetChainInfo (jumlah blok; blok terbaru = height - 1).
+ * Backend menjawab 503 bila peer tidak terjangkau.
+ */
+export interface LedgerInfo {
+  channel: string
+  msp: string
+  height: number
+  /** Waktu backend membaca tinggi chain (ISO). */
+  checkedAt: string
+}
+
+/** Satu portal: peran tidak dipilih klien, backend menentukannya dari akun. */
 export interface LoginInput {
   identifier: string
   password: string
-  role: Role
 }
 
 export interface NewDraft {

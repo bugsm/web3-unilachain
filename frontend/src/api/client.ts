@@ -2,6 +2,7 @@ import type {
   ActivityItem,
   BatchResult,
   Draft,
+  LedgerInfo,
   LoginInput,
   NewDraft,
   Office,
@@ -39,7 +40,7 @@ export interface ApiClient {
 
   searchPublic(q: string): Promise<{ candidates: VerifyCandidate[]; truncated: boolean }>
   verify(npm: string): Promise<VerifyResult>
-  ledgerInfo(): Promise<{ channel: string; msp: string }>
+  ledgerInfo(): Promise<LedgerInfo>
 
   listOfficials(): Promise<Official[]>
   officialChanges(office: Office): Promise<OfficialChange[]>

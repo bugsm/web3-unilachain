@@ -106,11 +106,11 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
   const cell = "h-9 text-[13px]"
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-12 items-center gap-6 rounded-xl border border-slate-200 bg-[#F8FAFC] px-6 py-5">
+      <section className="grid grid-cols-12 items-center gap-6 rounded-xl border border-line bg-canvas px-6 py-5">
         <div className="col-span-12 flex items-start gap-4 lg:col-span-6">
-          <FileSpreadsheet size={22} className="mt-0.5 shrink-0 text-[#1D4ED8]" />
+          <FileSpreadsheet size={22} className="mt-0.5 shrink-0 text-brand" />
           <div>
-            <p className="text-sm font-semibold text-slate-900">Impor daftar lulusan {faculty}</p>
+            <p className="text-sm font-semibold text-ink">Impor daftar lulusan {faculty}</p>
             <p className="mt-1 text-xs leading-relaxed text-slate-500">
               Kolom: <span className="font-mono">{CSV_COLUMNS.split(",").join(", ")}</span>. Pemisah koma, titik koma, atau tab;
               predikat dihitung otomatis.
@@ -149,12 +149,12 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
             </div>
           </div>
         )}
-        <p role="status" className="col-span-12 border-t border-slate-200 pt-4 text-xs text-slate-600">
+        <p role="status" className="col-span-12 border-t border-line pt-4 text-xs text-slate-600">
           {notice}
         </p>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-slate-200">
+      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
         <SectionTitle
           title={`Batch · ${rows.length} baris`}
           aside={
@@ -166,7 +166,7 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
         />
         <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[1040px] text-sm">
-            <thead className="bg-[#F8FAFC]">
+            <thead className="bg-canvas">
               <tr>
                 <th className={cx(th, "w-10")}>#</th>
                 <th className={th}>NPM</th>
@@ -180,7 +180,7 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
             </thead>
             <tbody>
               {checked.map(({ row, errors, first }, i) => (
-                <tr key={row.id} className="border-t border-slate-200 align-top">
+                <tr key={row.id} className="border-t border-line align-top">
                   <td className={cx(td, "pt-5 font-mono text-xs text-slate-400")}>{i + 1}</td>
                   <td className="px-2 py-3">
                     <Input
@@ -237,9 +237,9 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
                   </td>
                   <td className={cx(td, "pt-4")}>
                     {first ? (
-                      <span className="block max-w-56 text-xs leading-snug text-[#E11D48]">{first}</span>
+                      <span className="block max-w-56 text-xs leading-snug text-bad">{first}</span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#059669]">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-ok">
                         <Check size={14} /> Siap
                       </span>
                     )}
@@ -249,7 +249,7 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
                       label={`Hapus baris ${i + 1}`}
                       onClick={() => setRows((rs) => rs.filter((r) => r.id !== row.id))}
                       disabled={rows.length <= 1}
-                      className="hover:text-[#E11D48]"
+                      className="hover:text-bad"
                     >
                       <Trash2 size={15} />
                     </IconButton>
@@ -259,7 +259,7 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
             </tbody>
           </table>
         </div>
-        <div className="flex flex-wrap items-center gap-4 border-t border-slate-200 bg-[#F8FAFC] px-6 py-4">
+        <div className="flex flex-wrap items-center gap-4 border-t border-line bg-canvas px-6 py-4">
           <Button size="sm" variant="ghost" onClick={() => setRows((rs) => [...rs, newRow(emptyForm(faculty))])}>
             <Plus size={15} /> Tambah baris
           </Button>

@@ -1,51 +1,40 @@
-import { screen, within } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import { createMockClient, DEMO_PASSWORD } from "@/api/mock/mockClient"
 import { findBreadcrumb, renderApp } from "@/test/renderApp"
 
 const heading = () => screen.findByRole("heading", { name: "Masuk ke Sistem Pengesahan SKPI" })
+const submit = () => screen.getByRole("button", { name: "Masuk" })
 
 test("kirim kosong menampilkan galat", async () => {
   const { user } = await renderApp("/masuk")
   await heading()
-  await user.click(screen.getByRole("button", { name: /Masuk & Akses Konsol/ }))
+  await user.click(submit())
   expect(screen.getByText("Email, NIP, atau NIDN wajib diisi.")).toBeInTheDocument()
   expect(screen.getByText("Kata sandi wajib diisi.")).toBeInTheDocument()
 })
 
-test("peran default Admin Fakultas dan panah kanan berpindah ke Dekan", async () => {
-  const { user } = await renderApp("/masuk")
+test("satu portal: tidak ada pilihan peran", async () => {
+  await renderApp("/masuk")
   await heading()
-  const group = screen.getByRole("radiogroup", { name: "Peran" })
-  const admin = within(group).getByRole("radio", { name: "Admin Fakultas" })
-  expect(admin).toBeChecked()
-  admin.focus()
-  await user.keyboard("{ArrowRight}")
-  expect(within(group).getByRole("radio", { name: "Dekan" })).toBeChecked()
-  expect(within(group).getByRole("radio", { name: "Dekan" })).toHaveFocus()
+  expect(screen.queryByRole("radiogroup")).toBeNull()
+  expect(screen.queryByRole("radio")).toBeNull()
 })
 
-async function fill(user: Awaited<ReturnType<typeof renderApp>>["user"], email: string, role: string) {
-  await user.click(screen.getByRole("radio", { name: role }))
+async function fill(user: Awaited<ReturnType<typeof renderApp>>["user"], email: string) {
   await user.type(screen.getByLabelText(/Email \/ NIP \/ NIDN/), email)
   await user.type(screen.getByLabelText("Kata sandi"), DEMO_PASSWORD)
 }
 
-test("login dekan menuju ikhtisar", async () => {
+test.each([
+  ["admin.fmipa@unila.ac.id", "Ikhtisar"],
+  ["dekan.fmipa@unila.ac.id", "Antrean pengesahan"],
+  ["rektor@unila.ac.id", "Antrean pengesahan"],
+])("%s diarahkan otomatis ke %s", async (email, page) => {
   const { user } = await renderApp("/masuk")
   await heading()
-  await fill(user, "dekan.fmipa@unila.ac.id", "Dekan")
-  await user.click(screen.getByRole("button", { name: /Masuk & Akses Konsol/ }))
-  const crumb = await findBreadcrumb()
-  expect(crumb).toHaveTextContent("Ikhtisar")
-})
-
-test("peran salah menampilkan pesan dan tetap di halaman masuk", async () => {
-  const { user } = await renderApp("/masuk")
-  await heading()
-  await fill(user, "dekan.fmipa@unila.ac.id", "Rektor")
-  await user.click(screen.getByRole("button", { name: /Masuk & Akses Konsol/ }))
-  expect(await screen.findByText("Akun ini tidak memegang peran tersebut. Pilih peran yang sesuai.")).toBeInTheDocument()
-  expect(screen.getByRole("heading", { name: "Masuk ke Sistem Pengesahan SKPI" })).toBeInTheDocument()
+  await fill(user, email)
+  await user.click(submit())
+  expect(await findBreadcrumb()).toHaveTextContent(page)
 })
 
 test("sandi salah memakai pesan server", async () => {
@@ -53,7 +42,7 @@ test("sandi salah memakai pesan server", async () => {
   await heading()
   await user.type(screen.getByLabelText(/Email \/ NIP \/ NIDN/), "admin.fmipa@unila.ac.id")
   await user.type(screen.getByLabelText("Kata sandi"), "salah-sekali")
-  await user.click(screen.getByRole("button", { name: /Masuk & Akses Konsol/ }))
+  await user.click(submit())
   expect(await screen.findByText("Email atau kata sandi salah.")).toBeInTheDocument()
 })
 
@@ -62,26 +51,32 @@ test("klik ganda hanya memanggil login sekali", async () => {
   const spy = vi.spyOn(client, "login")
   const { user } = await renderApp("/masuk", { client })
   await heading()
-  await fill(user, "admin.fmipa@unila.ac.id", "Admin Fakultas")
-  const btn = screen.getByRole("button", { name: /Masuk & Akses Konsol/ })
+  await fill(user, "admin.fmipa@unila.ac.id")
+  const btn = submit()
   await user.dblClick(btn)
   expect(btn).toHaveAttribute("aria-busy", "true")
   expect(spy).toHaveBeenCalledTimes(1)
+  expect(spy).toHaveBeenCalledWith({ identifier: "admin.fmipa@unila.ac.id", password: DEMO_PASSWORD })
   await findBreadcrumb()
 })
 
 test("?next mengembalikan ke halaman tujuan", async () => {
   const { user } = await renderApp("/masuk?next=%2Fdaftar")
   await heading()
-  await fill(user, "rektor@unila.ac.id", "Rektor")
-  await user.click(screen.getByRole("button", { name: /Masuk & Akses Konsol/ }))
+  await fill(user, "rektor@unila.ac.id")
+  await user.click(submit())
   expect(await findBreadcrumb()).toHaveTextContent("Daftar & riwayat")
 })
 
-test("?next ke situs luar diabaikan", async () => {
+test("?next ke situs luar diabaikan, tujuan mengikuti peran", async () => {
   const { user } = await renderApp("/masuk?next=%2F%2Fevil.example")
   await heading()
-  await fill(user, "rektor@unila.ac.id", "Rektor")
-  await user.click(screen.getByRole("button", { name: /Masuk & Akses Konsol/ }))
-  expect(await findBreadcrumb()).toHaveTextContent("Ikhtisar")
+  await fill(user, "rektor@unila.ac.id")
+  await user.click(submit())
+  expect(await findBreadcrumb()).toHaveTextContent("Antrean pengesahan")
+})
+
+test("sudah masuk lalu membuka /masuk diarahkan ke beranda perannya", async () => {
+  await renderApp("/masuk", { as: "dekan.fmipa@unila.ac.id" })
+  expect(await findBreadcrumb()).toHaveTextContent("Antrean pengesahan")
 })

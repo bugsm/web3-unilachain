@@ -12,7 +12,7 @@ test("loading menonaktifkan tombol dan menandai sibuk", () => {
 test("umpan balik tekan tanpa transition-all", () => {
   render(<Button>Sahkan</Button>)
   const cls = screen.getByRole("button").className
-  expect(cls).toContain("active:scale-[0.97]")
+  expect(cls).toContain("active:scale-[0.985]")
   expect(cls).not.toContain("transition-all")
 })
 

@@ -1,13 +1,12 @@
 import type { ApiClient } from "../client"
 import { ApiError } from "../errors"
-import type { RecordStatus, Role } from "../types"
+import type { RecordStatus } from "../types"
 import type { SkpiInput } from "@/domain/skpi"
 import { createMockClient, DEMO_PASSWORD } from "./mockClient"
 
 async function loginAs(client: ApiClient, email: string) {
   await client.logout()
-  const role: Role = email.startsWith("admin") ? "admin" : email.startsWith("dekan") ? "dekan" : "rektor"
-  return client.login({ identifier: email, password: DEMO_PASSWORD, role })
+  return client.login({ identifier: email, password: DEMO_PASSWORD })
 }
 
 async function expectApiError(p: Promise<unknown>, status: number) {
@@ -48,15 +47,9 @@ beforeEach(() => {
   client = createMockClient({ latencyMs: 0, seed: false })
 })
 
-test("1. login: sandi salah 401, peran tidak cocok 403", async () => {
-  await expectApiError(
-    client.login({ identifier: "admin.fmipa@unila.ac.id", password: "salah-salah", role: "admin" }),
-    401,
-  )
-  await expectApiError(
-    client.login({ identifier: "admin.fmipa@unila.ac.id", password: DEMO_PASSWORD, role: "dekan" }),
-    403,
-  )
+test("1. login: sandi salah 401; peran ditentukan akun, bukan klien", async () => {
+  await expectApiError(client.login({ identifier: "admin.fmipa@unila.ac.id", password: "salah-salah" }), 401)
+  expect(await client.login({ identifier: " Admin.FMIPA@unila.ac.id ", password: DEMO_PASSWORD })).toMatchObject({ role: "admin" })
   const user = await loginAs(client, "dekan.fmipa@unila.ac.id")
   expect(user).toMatchObject({ role: "dekan", faculty: "FMIPA", actorId: "dekan-fmipa@UnilaMSP" })
   expect(await client.me()).toEqual(user)
@@ -373,4 +366,24 @@ test("koreksi tanpa perubahan nama ditolak dan tidak tercatat", async () => {
   const r = (await c.listOfficials())[0]
   await expectApiError(c.correctOfficial("REKTOR", r.periods[0].id, `  ${r.periods[0].name}  `), 400)
   expect((await c.listOfficials())[0].lastChange).toBeNull()
+})
+
+test("ledgerInfo: tinggi chain naik satu per transaksi ledger, bukan per peristiwa off-chain", async () => {
+  const before = await client.ledgerInfo()
+  expect(before).toMatchObject({ channel: "skpi-channel", msp: "UnilaMSP" })
+  expect(before.height).toBeGreaterThan(0)
+  expect(Date.parse(before.checkedAt)).not.toBeNaN()
+  const d = await submit(client, input())
+  expect((await client.ledgerInfo()).height).toBe(before.height)
+  await loginAs(client, "dekan.fmipa@unila.ac.id")
+  await client.approveDraft(d.id)
+  expect((await client.ledgerInfo()).height).toBe(before.height + 1)
+})
+
+test("ledgerInfo: peer tidak terjangkau → 503", async () => {
+  const c = createMockClient({ latencyMs: 0, seed: false })
+  c.setChainOnline(false)
+  await expectApiError(c.ledgerInfo(), 503)
+  c.setChainOnline(true)
+  await expect(c.ledgerInfo()).resolves.toMatchObject({ channel: "skpi-channel" })
 })
