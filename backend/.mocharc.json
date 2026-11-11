@@ -1,0 +1,1 @@
+{ "node-option": ["import=tsx"], "extension": ["ts"], "timeout": 10000 }
