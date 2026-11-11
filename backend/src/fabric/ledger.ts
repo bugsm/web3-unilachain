@@ -3,8 +3,17 @@
  * `identity` = label di wallet (dekan-<fakultas>, rektor, app-reader).
  */
 export interface Ledger {
-  /** Endorse + submit + tunggu commit. Resolve hanya bila transaksi sudah ter-commit valid. */
-  submit(identity: string, fn: string, args: string[]): Promise<{ txId: string; result: string }>
+  /**
+   * Endorse + submit + tunggu commit. Resolve hanya bila transaksi sudah ter-commit valid.
+   * `onSubmitting(txId)` dipanggil setelah endorse, sebelum dikirim ke orderer: tempat mencatat transaksi tertunda
+   * sehingga rekonsiliasi dapat menyelesaikannya walau proses mati di tengah.
+   */
+  submit(
+    identity: string,
+    fn: string,
+    args: string[],
+    onSubmitting?: (txId: string) => Promise<void>,
+  ): Promise<{ txId: string; result: string }>
   evaluate(identity: string, fn: string, args: string[]): Promise<string>
   /** Tinggi chain (qscc GetChainInfo). */
   chainHeight(): Promise<number>
