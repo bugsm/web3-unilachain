@@ -26,6 +26,30 @@ Prasyarat di server aplikasi (laptop riset: Windows + Docker Desktop):
 2. Folder `wallet/` berisi CA TLS UnilaMSP, sertifikat + kunci akun dekan (8 fakultas), rektor, dan `app-reader` yang disalin dari VM-1.
    Folder ini tidak masuk Git.
 
+## Frontend
+
+React 19 + Vite + Tailwind v4. Tampilan mengikuti rancangan Figma "Rancang Antarmuka Verifikasi SKPI", alur mengikuti
+chaincode (spesifikasi: `docs/superpowers/specs/2026-11-10-frontend-skpi-design.md`, kontrak API di §6).
+
+```bash
+cd frontend
+cp .env.example .env.local   # VITE_API_MODE=mock: klien API tiruan, tanpa backend
+npm ci
+npm run dev                  # http://localhost:5173, akun demo tampil di halaman masuk (mode mock)
+                             # mode mock: skpiChain(false) di konsol browser mensimulasikan peer terputus
+npm test -- --run            # Vitest + React Testing Library
+npm run build                # tsc + vite build; mode mock tidak pernah masuk bundle production
+```
+
+Tanpa `VITE_API_MODE=mock`, `npm run dev` meneruskan `/api` ke `http://localhost:3000` (backend).
+
+Image Docker (nginx, port 8080) meneruskan `/api/` ke `BACKEND_URL` yang dibaca saat kontainer start:
+
+```bash
+docker build -t skpi-frontend frontend
+docker run --rm -p 8080:8080 -e BACKEND_URL=http://host.docker.internal:3000 skpi-frontend
+```
+
 ## Kesesuaian dengan unila-chain
 
 | Hal | Nilai | Sumber di unila-chain |

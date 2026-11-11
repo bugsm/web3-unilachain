@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+/*
+ * Satu sistem visual (palet "warm-black-gold" + Instrument Sans / DM Mono, dibagikan taste-skill untuk software).
+ * Antarmuka 90–95% netral hangat; tinta hitam hangat untuk teks dan tombol utama; emas Unila hanya aksen di latar gelap.
+ * Skala slate Tailwind ditimpa dengan netral hangat agar seluruh layar ikut tanpa mengganti kelas satu per satu.
+ */
+@theme {
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-slate-50: #faf9f7;
+  --color-slate-100: #f3f2ef;
+  --color-slate-200: #e6e3de;
+  --color-slate-300: #d3cfc8;
+  --color-slate-400: #a19c95;
+  --color-slate-500: #736e67;
+  --color-slate-600: #5a5651;
+  --color-slate-700: #44403b;
+  --color-slate-800: #2b2824;
+  --color-slate-900: #1a1714;
+
+  --color-ink: #0c0a08;
+  --color-ink-2: #181512;
+  --color-ink-3: #24201b;
+  --color-brand: #0c0a08;
+  --color-brand-strong: #2b2620;
+  --color-brand-soft: #f1eee8;
+  --color-gold: #c9a45a;
+  --color-gold-ink: #85662a;
+  --color-gold-soft: #f6efe0;
+  --color-canvas: #f5f4f1;
+  --color-line: #e6e3de;
+  --color-ok: #1d7a4c;
+  --color-ok-soft: #e7f3ec;
+  --color-warn: #9a5b0b;
+  --color-warn-soft: #fbf1de;
+  --color-bad: #b4232f;
+  --color-bad-soft: #fbe9ea;
+}
+
+:root {
+  /* Kurva gerak (Emil Kowalski): ease-out kuat untuk UI, kurva drawer ala iOS. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@layer base {
+  /*
+   * Ruang scrollbar selalu dipesan: halaman yang bisa digulir dan yang tidak punya lebar konten yang sama,
+   * sehingga tepi kiri header dan isi segaris antarhalaman. Celahnya mengikuti latar halaman.
+   */
+  html {
+    scrollbar-gutter: stable;
+    background: var(--color-canvas);
+  }
+  html:has(.ground-ledger) {
+    background: var(--color-ink);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-feature-settings: "ss01", "cv11";
+    min-width: 320px;
+    min-height: 100dvh;
+    background: #ffffff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background: var(--color-brand-soft);
+  }
+
+  :focus-visible {
+    outline-color: var(--color-brand);
+  }
+
+  /* Cegah zoom otomatis iOS saat fokus ke input. */
+  @media (max-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Judul besar: Instrument Sans 500, tracking rapat, sedikit dipadatkan. */
+@layer components {
+  .display {
+    font-weight: 500;
+    font-stretch: 96%;
+    letter-spacing: -0.032em;
+    text-wrap: balance;
+  }
+  /* Latar gelap ruang kerja (tech): kisi halus yang memudar ke tepi + cahaya emas lembut. */
+  .ground-ledger {
+    background-color: var(--color-ink);
+    background-image:
+      radial-gradient(60% 50% at 78% 0%, rgb(201 164 90 / 0.16), transparent 70%),
+      radial-gradient(40% 40% at 0% 100%, rgb(201 164 90 / 0.06), transparent 70%);
+  }
+  .ground-ledger::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(80% 70% at 50% 30%, #000 30%, transparent 85%);
+  }
+}
+
+/* Denyut emas di rantai pengesahan: 3,2 s per putaran, tiga kali, lalu diam (taste: loop 2,5–4 s, tanpa gerak abadi). */
+@keyframes flow-pulse {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+/* Masuk hero: sekali saat dimuat, naik 12px + opacity, 700 ms, jeda per elemen lewat --d. */
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@layer utilities {
+  .flow-pulse {
+    animation: flow-pulse 3.2s cubic-bezier(0.65, 0, 0.35, 1) 600ms 3 both;
+  }
+  .enter {
+    animation: enter-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0ms) both;
+  }
+  .ease-out-ui {
+    transition-timing-function: var(--ease-out);
+  }
+  .ease-drawer {
+    transition-timing-function: var(--ease-drawer);
+  }
+}
+
+/* Gerak dikurangi: transform dihapus, perubahan opacity/warna tetap membantu pemahaman. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-property: opacity, color, background-color, border-color !important;
+    animation: none !important;
+  }
+}
+
+/*
+ * Cetak: satu lembar A4. Lembar cetak khusus (VerifyPrint) yang tampil; layar web disembunyikan.
+ * Margin 0 agar browser tidak menambahkan tanggal/URL/nomor halaman di tepi; margin dokumen diatur di lembar itu sendiri.
+ */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  header,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+}
