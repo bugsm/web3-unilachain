@@ -37,21 +37,21 @@ export function ChainStatus({ tone = "light", detailed = false, className }: { t
 
   if (detailed)
     return (
-      <div role="status" aria-label="Status blockchain" aria-live="polite" className={cx("text-[13px]", className)}>
+      <div role="status" aria-label="Status blockchain" aria-live="polite" className={cx("text-label", className)}>
         <p className={muted}>Jaringan Hyperledger Fabric</p>
         <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-0.5">
-          <span className={cx("flex items-center gap-2 text-[15px] font-medium", strong)}>
+          <span className={cx("flex items-center gap-2 text-body font-medium", strong)}>
             <Dot state={state} />
             {LABEL[state]}
           </span>
           {showBlock && (
-            <span className={cx("font-mono text-[15px] whitespace-nowrap tabular-nums", strong)}>
-              <span className={cx("mr-1.5 font-sans text-[13px]", muted)}>Blok terbaru</span>
+            <span className={cx("font-mono text-body whitespace-nowrap tabular-nums", strong)}>
+              <span className={cx("mr-1.5 font-sans text-label", muted)}>Blok terbaru</span>
               {formatBlock(latestBlock)}
             </span>
           )}
         </div>
-        <p className={cx("mt-1 font-mono text-[12px] tabular-nums", muted)}>
+        <p className={cx("mt-1 font-mono text-xs tabular-nums", muted)}>
           {info?.channel ?? "skpi-channel"}
           {state === "offline" && latestBlock !== null && ` · terakhir diketahui ${formatBlock(latestBlock)}`}
           {lastCheck && ` · diperiksa ${timeFmt.format(lastCheck)}`}
@@ -66,7 +66,7 @@ export function ChainStatus({ tone = "light", detailed = false, className }: { t
       aria-live="polite"
       title={info ? `${info.channel} · ${info.msp}${lastCheck ? ` · diperiksa ${timeFmt.format(lastCheck)}` : ""}` : undefined}
       className={cx(
-        "inline-flex h-8 items-center gap-2 rounded-full border px-3 text-[12.5px] whitespace-nowrap",
+        "inline-flex h-8 items-center gap-2 rounded-full border px-3 text-label whitespace-nowrap",
         dark ? "border-white/15 text-white/80" : "border-line bg-white text-slate-600",
         className,
       )}

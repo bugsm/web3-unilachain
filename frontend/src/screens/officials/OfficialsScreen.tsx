@@ -73,10 +73,10 @@ function HistoryDrawer({
     <Drawer open={!!office} onClose={onClose} label={`Riwayat ${label}`}>
       {official && (
         <div className="px-6 py-8 sm:px-8">
-          <p className="text-[13px] font-semibold text-ink">{label}</p>
-          <h2 className="mt-1 pr-10 text-2xl font-semibold tracking-[-0.02em] text-ink">Riwayat jabatan</h2>
+          <p className="text-label font-semibold text-ink">{label}</p>
+          <h2 className="mt-1 pr-10 display text-2xl text-ink">Riwayat jabatan</h2>
 
-          <h3 className="mt-8 mb-3 text-[13px] font-semibold text-ink">Periode</h3>
+          <h3 className="mt-8 mb-3 text-label font-semibold text-ink">Periode</h3>
           <ol aria-label="Periode jabatan" className="border-t border-line">
             {[...official.periods].reverse().map((p) => (
               <li key={p.id} className="flex items-start justify-between gap-4 border-b border-line py-3.5">
@@ -95,7 +95,7 @@ function HistoryDrawer({
             ))}
           </ol>
 
-          <h3 className="mt-10 mb-3 text-[13px] font-semibold text-ink">Perubahan</h3>
+          <h3 className="mt-10 mb-3 text-label font-semibold text-ink">Perubahan</h3>
           {changes.error !== undefined && <LoadError error={changes.error} onRetry={changes.reload} />}
           {changes.data && changes.data.length === 0 && <p className="text-sm text-slate-500">Belum ada perubahan.</p>}
           {changes.data && changes.data.length > 0 && (
@@ -103,7 +103,7 @@ function HistoryDrawer({
               {changes.data.map((c) => (
                 <li key={c.id} className="border-b border-line py-3.5 text-sm">
                   <p>
-                    <span className="font-mono text-[12px] font-semibold text-ink">{c.kind}</span>
+                    <span className="font-mono text-xs font-semibold text-ink">{c.kind}</span>
                     <span className="text-slate-500"> · {c.by}</span>
                   </p>
                   <p className="mt-1 text-slate-700">
@@ -144,15 +144,15 @@ export function OfficialsScreen() {
         </div>
       )}
 
-      <section aria-labelledby={rektorId} className="rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)] p-6">
+      <section aria-labelledby={rektorId} className="rounded-2xl border border-line bg-white shadow-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 id={rektorId} className="text-[13px] font-semibold text-ink">
+            <h2 id={rektorId} className="text-label font-semibold text-ink">
               Rektor
             </h2>
             {rektor && (
               <>
-                <p className="mt-2 text-xl font-semibold tracking-[-0.01em] text-ink">{current(rektor).name}</p>
+                <p className="mt-2 text-xl font-semibold text-ink">{current(rektor).name}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Universitas Lampung · menjabat sejak {formatDate(current(rektor).from)}
                 </p>
@@ -166,7 +166,7 @@ export function OfficialsScreen() {
         </div>
       </section>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
+      <div className="mt-8 overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[860px] text-sm">
             <thead className="bg-canvas">

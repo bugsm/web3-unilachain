@@ -69,7 +69,7 @@ function Sidebar({ pending, onNavigate, onClose }: { pending: number; onNavigate
                     <n.icon size={18} className={isActive ? "text-white" : "text-white/45"} />
                     <span className="flex-1 text-left">{n.label}</span>
                     {n.to === "/antrean" && pending > 0 && (
-                      <span className="rounded-full bg-gold px-1.5 py-0.5 text-[11px] font-semibold text-ink tabular-nums">
+                      <span className="rounded-full bg-gold px-1.5 py-0.5 text-xs font-semibold text-ink tabular-nums">
                         {pending}
                       </span>
                     )}
@@ -98,7 +98,7 @@ function Sidebar({ pending, onNavigate, onClose }: { pending: number; onNavigate
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white">{user.name}</p>
-          <p className="truncate font-mono text-[11px] text-white/50">{user.actorId}</p>
+          <p className="truncate font-mono text-xs text-white/50">{user.actorId}</p>
         </div>
         <IconButton label="Keluar" onClick={() => void logout()} className="text-slate-400 hover:bg-white/10 hover:text-white">
           <LogOut size={17} />
@@ -158,7 +158,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <div className="lg:pl-64">
         <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
-          <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-10">
+          <div className="flex h-16 items-center gap-4 px-5 sm:px-6 lg:px-10">
             <IconButton label="Buka menu" className="lg:hidden" onClick={() => setMobileOpen(true)}>
               <Menu size={19} />
             </IconButton>
@@ -173,7 +173,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <ChainStatus className="ml-auto lg:hidden" />
           </div>
         </header>
-        <main className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+        <main className="mx-auto max-w-[1280px] px-5 py-8 sm:px-6 lg:px-10 lg:py-10">
           {/* Pindah halaman sering terjadi: hanya opacity 120ms, tanpa geser. */}
           <div key={pathname.split("/")[1]} className="transition-opacity duration-[120ms] ease-out-ui starting:opacity-0">
             {children}

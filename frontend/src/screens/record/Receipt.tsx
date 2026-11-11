@@ -17,11 +17,11 @@ export function Receipt({ created, onAgain }: { created: Submitted[]; onAgain: (
         <span className="grid size-11 place-items-center rounded-full bg-ok-soft text-ok transition-[opacity,scale] duration-300 ease-out-ui starting:scale-90 starting:opacity-0">
           <Check size={22} strokeWidth={3} />
         </span>
-        <p className="mt-6 text-[13px] font-semibold text-ink">Draft off-chain</p>
-        <h1 className="mt-3 text-[28px] leading-tight font-semibold tracking-[-0.02em] text-ink sm:text-[32px]">
+        <p className="mt-6 text-label font-semibold text-ink">Draft off-chain</p>
+        <h1 className="mt-3 display text-title text-ink">
           {created.length > 1 ? `${created.length} draft diajukan ke Dekan.` : "Draft diajukan ke Dekan."}
         </h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-500">
+        <p className="mt-3 max-w-xl text-body leading-relaxed text-slate-500">
           Draft tersimpan di basis data aplikasi dan belum masuk ledger. Data tercatat di blockchain setelah Dekan menyetujui,
           lalu dapat diverifikasi publik setelah Rektor mengesahkan.
         </p>
@@ -32,7 +32,7 @@ export function Receipt({ created, onAgain }: { created: Submitted[]; onAgain: (
           <Button onClick={onAgain}>Catat lagi</Button>
         </div>
       </section>
-      <section className="col-span-12 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)] lg:col-span-5">
+      <section className="col-span-12 overflow-hidden rounded-2xl border border-line bg-white shadow-card lg:col-span-5">
         <SectionTitle title="Ringkasan draft" aside={<StatusBadge status="MENUNGGU_DEKAN" />} />
         {created.length === 1 ? (
           <div className="space-y-5 p-5">

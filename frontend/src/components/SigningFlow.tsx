@@ -24,15 +24,15 @@ export function LedgerFlow({ title, steps, className }: { title: string; steps: 
       aria-label={title}
       onPointerEnter={restart}
       onFocus={restart}
-      className={cx("relative overflow-hidden rounded-[20px] border border-white/10 bg-ink-2/80 px-6 pt-6 pb-7 backdrop-blur-sm sm:px-7", className)}
+      className={cx("relative overflow-hidden rounded-panel border border-white/10 bg-ink-2/80 px-6 pt-6 pb-7 backdrop-blur-sm sm:px-7", className)}
     >
-      <p className="text-[13px] font-medium text-white/80">{title}</p>
+      <p className="text-label font-medium text-white/80">{title}</p>
 
       {/* Tiga langkah + ledger = empat kolom; garis dari pusat kolom pertama ke pusat kolom terakhir. */}
       <ol className="relative mt-7 grid grid-cols-1 gap-5 sm:grid-cols-4 sm:gap-3">
         <div aria-hidden className="pointer-events-none absolute top-[7px] right-[12.5%] left-[12.5%] hidden h-px bg-white/15 sm:block">
           <div key={run} className="flow-pulse absolute inset-y-0 left-0 w-full">
-            <span className="absolute top-1/2 left-0 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold shadow-[0_0_12px_3px_rgb(201_164_90/0.55)]" />
+            <span className="absolute top-1/2 left-0 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold shadow-glow" />
           </div>
         </div>
 
@@ -42,8 +42,8 @@ export function LedgerFlow({ title, steps, className }: { title: string; steps: 
               <span className="size-[5px] rounded-full bg-white/60" />
             </span>
             <span className="sm:mt-4">
-              <span className="block text-[14px] font-medium text-white">{s.who}</span>
-              <span className="mt-1 block text-[13px] text-white/50">{s.note}</span>
+              <span className="block text-sm font-medium text-white">{s.who}</span>
+              <span className="mt-1 block text-label text-white/50">{s.note}</span>
             </span>
           </li>
         ))}
@@ -53,8 +53,8 @@ export function LedgerFlow({ title, steps, className }: { title: string; steps: 
             <span className={cx("size-[5px] rounded-full", state === "offline" ? "bg-bad" : "bg-gold")} />
           </span>
           <span className="sm:mt-4">
-            <span className="block text-[14px] font-medium text-gold">Ledger</span>
-            <span className="mt-1 block overflow-hidden text-[13px] text-white/80 tabular-nums">
+            <span className="block text-sm font-medium text-gold">Ledger</span>
+            <span className="mt-1 block overflow-hidden text-label text-white/80 tabular-nums">
               {state === "offline" ? (
                 "Terputus"
               ) : latestBlock !== null ? (

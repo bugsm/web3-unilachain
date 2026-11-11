@@ -13,7 +13,7 @@ export function Brand({ dark = false }: { dark?: boolean }) {
         <Logo />
       </span>
       <span className="text-left leading-tight">
-        <span className={cx("block text-[15px] font-semibold", dark ? "text-white" : "text-ink")}>SKPI Ledger</span>
+        <span className={cx("block text-body font-semibold", dark ? "text-white" : "text-ink")}>SKPI Ledger</span>
         <span className={cx("block text-xs", dark ? "text-slate-400" : "text-slate-500")}>Universitas Lampung</span>
       </span>
     </div>

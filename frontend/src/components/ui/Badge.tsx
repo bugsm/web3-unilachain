@@ -14,7 +14,7 @@ export function Badge({ tone, children }: { tone: Tone; children: ReactNode }) {
   return (
     <span
       className={cx(
-        "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-medium whitespace-nowrap",
+        "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium whitespace-nowrap",
         TONE[tone].badge,
       )}
     >
@@ -32,7 +32,7 @@ export function StatusBadge({ status }: { status: RecordStatus }) {
 /** Penanda kecil untuk draft perubahan/pencabutan yang menunggu keputusan. */
 export function Tag({ children, tone = "pending" }: { children: ReactNode; tone?: Tone }) {
   return (
-    <span className={cx("inline-flex h-5 items-center rounded px-1.5 text-[11px] font-medium whitespace-nowrap", TONE[tone].badge)}>
+    <span className={cx("inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium whitespace-nowrap", TONE[tone].badge)}>
       {children}
     </span>
   )

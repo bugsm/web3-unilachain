@@ -71,12 +71,12 @@ export function RegistryScreen() {
                 onClick={() => setParam("status", t.id === "ALL" ? "" : t.id)}
                 className={cx(
                   // Tab: tanpa animasi indikator (sering dipakai); hanya warna.
-                  "flex h-11 items-center gap-2 border-b-2 text-sm whitespace-nowrap transition-colors duration-150",
+                  "flex h-12 items-center gap-2 border-b-2 text-sm whitespace-nowrap transition-colors duration-150",
                   active ? "border-brand font-semibold text-ink" : "border-transparent text-slate-500 hover:text-ink",
                 )}
               >
                 {t.label}
-                <span className={cx("rounded px-1.5 text-xs tabular-nums", active ? "bg-brand-soft text-brand" : "bg-slate-100 text-slate-500")}>
+                <span className={cx("rounded-md px-1.5 text-xs tabular-nums", active ? "bg-brand-soft text-brand" : "bg-slate-100 text-slate-500")}>
                   {list.data ? n : "–"}
                 </span>
               </button>
@@ -110,7 +110,7 @@ export function RegistryScreen() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
+      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full min-w-[1000px] text-sm">
             <thead className="bg-canvas">

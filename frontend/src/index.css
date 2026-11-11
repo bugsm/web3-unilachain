@@ -9,6 +9,34 @@
   --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "DM Mono", ui-monospace, SFMono-Regular, monospace;
 
+  /*
+   * Skala ukuran (px). Hanya anak tangga ini yang dipakai; dijaga src/designSystem.test.ts.
+   * Teks  : xs 12 keterangan · label 13 · sm 14 tabel · body 15 · base 16 · lead 17 · xl 20 · 2xl 24 ·
+   *         title 28 · display-sm 40 · display-md 48 · display-lg 56 · display-xl 64
+   * Radius: md 6 tag · lg 8 kontrol · xl 12 kontrol besar/modal · 2xl 16 kartu · panel 20 panel hero · full pil
+   * Tinggi: 20/24 lencana · 28 pil · 32 kecil · 40 standar · 48 besar · header 64
+   */
+  --text-label: 13px;
+  --text-body: 15px;
+  --text-lead: 17px;
+  --text-title: 28px;
+  --text-title--line-height: 1.1;
+  --text-display-sm: 40px;
+  --text-display-sm--line-height: 1.05;
+  --text-display-md: 48px;
+  --text-display-md--line-height: 1.05;
+  --text-display-lg: 56px;
+  --text-display-lg--line-height: 1.05;
+  --text-display-xl: 64px;
+  --text-display-xl--line-height: 1;
+
+  --radius-panel: 20px;
+
+  --shadow-card: 0 1px 2px rgb(12 10 8 / 0.04);
+  --shadow-button: 0 1px 2px rgb(12 10 8 / 0.2);
+  --shadow-panel: 0 40px 100px -30px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.08);
+  --shadow-glow: 0 0 12px 3px rgb(201 164 90 / 0.55);
+
   --color-slate-50: #faf9f7;
   --color-slate-100: #f3f2ef;
   --color-slate-200: #e6e3de;

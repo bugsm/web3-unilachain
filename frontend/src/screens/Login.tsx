@@ -38,7 +38,7 @@ const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties
 
 const inputCls = (invalid: boolean) =>
   cx(
-    "h-12 w-full rounded-xl border bg-white px-4 text-[15px] text-ink outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-slate-400 focus:ring-[3px]",
+    "h-12 w-full rounded-xl border bg-white px-4 text-body text-ink outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-slate-400 focus:ring-[3px]",
     invalid ? "border-bad focus:border-bad focus:ring-bad/15" : "border-slate-300 hover:border-slate-400 focus:border-ink focus:ring-ink/10",
   )
 
@@ -87,14 +87,14 @@ export function Login() {
 
   const text = (
     <>
-      <p className="enter inline-flex h-7 items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-3 text-[13px] text-white/70">
+      <p className="enter inline-flex h-7 items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-3 text-label text-white/70">
         <span aria-hidden className="size-1.5 rounded-full bg-gold" />
         Biro Akademik dan Kemahasiswaan
       </p>
-      <p className="display enter mt-6 text-[40px] leading-[1.04] sm:text-[52px] lg:text-[58px]" style={delay(80)}>
+      <p className="display enter mt-6 text-display-sm sm:text-display-md lg:text-display-lg" style={delay(80)}>
         Pengesahan SKPI, dari draft fakultas sampai tanda tangan Rektor.
       </p>
-      <p className="enter mt-6 max-w-[540px] text-[17px] leading-relaxed text-white/60" style={delay(160)}>
+      <p className="enter mt-6 max-w-[540px] text-lead leading-relaxed text-white/60" style={delay(160)}>
         Admin menyusun draft, Dekan dan Rektor menandatanganinya dengan sertifikat masing-masing. Setiap tanda tangan masuk ke ledger
         dan bisa diperiksa siapa pun lewat portal verifikasi.
       </p>
@@ -104,19 +104,19 @@ export function Login() {
 
   const panel = (
     <div
-      className="enter rounded-[20px] bg-white p-7 text-ink shadow-[0_40px_100px_-30px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.08)] sm:p-9"
+      className="enter rounded-panel bg-white p-7 text-ink shadow-panel sm:p-9"
       style={delay(120)}
     >
       <form onSubmit={submit} noValidate>
-        <h1 className="display text-[28px] leading-[1.1]">Masuk ke Sistem Pengesahan SKPI</h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-slate-600">
+        <h1 className="display text-title">Masuk ke Sistem Pengesahan SKPI</h1>
+        <p className="mt-3 text-body leading-relaxed text-slate-600">
           Satu akun untuk semua jabatan. Halaman kerja dibuka sesuai jabatan pada akun Anda.
         </p>
 
         <div className="mt-8">
-          <label htmlFor="login-id" className="mb-2 flex items-center justify-between text-[13px] font-medium text-ink">
+          <label htmlFor="login-id" className="mb-2 flex items-center justify-between text-label font-medium text-ink">
             Email / NIP / NIDN
-            {kind && <span className="font-mono text-[12px] font-normal text-slate-500">{kind}</span>}
+            {kind && <span className="font-mono text-xs font-normal text-slate-500">{kind}</span>}
           </label>
           <input
             id="login-id"
@@ -135,14 +135,14 @@ export function Login() {
             className={cx(inputCls(!!errors.id), numeric && "font-mono")}
           />
           {errors.id && (
-            <p id="login-id-err" className="mt-2 text-[13px] text-bad">
+            <p id="login-id-err" className="mt-2 text-label text-bad">
               {errors.id}
             </p>
           )}
         </div>
 
         <div className="mt-5">
-          <label htmlFor="login-pw" className="mb-2 block text-[13px] font-medium text-ink">
+          <label htmlFor="login-pw" className="mb-2 block text-label font-medium text-ink">
             Kata sandi
           </label>
           <div className="relative">
@@ -172,12 +172,12 @@ export function Login() {
             </button>
           </div>
           {errors.password ? (
-            <p id="login-pw-err" className="mt-2 text-[13px] text-bad">
+            <p id="login-pw-err" className="mt-2 text-label text-bad">
               {errors.password}
             </p>
           ) : (
             caps && (
-              <p className="mt-2 flex items-center gap-1.5 text-[13px] text-warn">
+              <p className="mt-2 flex items-center gap-1.5 text-label text-warn">
                 <TriangleAlert size={14} /> Caps Lock aktif
               </p>
             )
@@ -185,17 +185,17 @@ export function Login() {
         </div>
 
         {serverError && (
-          <p role="alert" className="mt-5 rounded-xl border border-bad/20 bg-bad-soft px-4 py-3 text-[14px] text-bad">
+          <p role="alert" className="mt-5 rounded-xl border border-bad/20 bg-bad-soft px-4 py-3 text-sm text-bad">
             {serverError}
           </p>
         )}
 
-        <Button type="submit" variant="primary" size="lg" loading={loading} loadingLabel="Memeriksa akun…" className="group mt-8 h-12 w-full rounded-xl text-[15px]">
+        <Button type="submit" variant="primary" size="lg" loading={loading} loadingLabel="Memeriksa akun…" className="group mt-8 w-full rounded-xl">
           Masuk
           <ArrowRight size={17} className="transition-[translate] duration-150 ease-out-ui group-hover:translate-x-[3px]" />
         </Button>
       </form>
-      <p className="mt-6 border-t border-line pt-5 text-[14px] text-slate-600">
+      <p className="mt-6 border-t border-line pt-5 text-sm text-slate-600">
         Memeriksa keaslian SKPI?{" "}
         <Link to="/verifikasi" className="font-medium text-ink underline decoration-slate-300 underline-offset-4 transition-colors hover:decoration-ink">
           Buka portal verifikasi
@@ -206,7 +206,7 @@ export function Login() {
 
   const demo =
     import.meta.env.DEV && import.meta.env.VITE_API_MODE === "mock" ? (
-      <div className="text-[13px] text-white/55">
+      <div className="text-label text-white/55">
         <p>Akun demo (mode mock), sandi {DEMO_PASSWORD}</p>
         <ul className="mt-2 flex flex-wrap gap-1.5">
           {DEMO_ACCOUNTS.map((a) => (

@@ -24,10 +24,10 @@ export function buttonClass(variant: Variant = "secondary", size: Size = "md") {
   return cx(
     "place-items-center rounded-lg font-semibold whitespace-nowrap select-none focus-visible:ring-[3px] focus-visible:ring-gold/60 focus-visible:outline-none disabled:cursor-not-allowed",
     press,
-    size === "sm" && "h-8 px-3 text-[13px]",
+    size === "sm" && "h-8 px-3 text-label",
     size === "md" && "h-10 px-4 text-sm",
-    size === "lg" && "h-11 px-5 text-sm",
-    variant === "primary" && cx("bg-brand text-white shadow-[0_1px_2px_rgb(12_10_8/0.2)] hover:bg-brand-strong", lift),
+    size === "lg" && "h-12 px-5 text-body",
+    variant === "primary" && cx("bg-brand text-white shadow-button hover:bg-brand-strong", lift),
     variant === "secondary" && cx("border border-slate-300 bg-white text-ink hover:border-slate-400 hover:bg-canvas", lift),
     variant === "ghost" && "text-slate-600 hover:bg-slate-100 hover:text-ink",
     variant === "danger" && "border border-bad/25 bg-white text-bad hover:bg-bad-soft",

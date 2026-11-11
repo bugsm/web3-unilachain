@@ -103,7 +103,7 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
     }
   }
 
-  const cell = "h-9 text-[13px]"
+  const cell = "h-8 text-label"
   return (
     <div className="space-y-6">
       <section className="grid grid-cols-12 items-center gap-6 rounded-xl border border-line bg-canvas px-6 py-5">
@@ -154,7 +154,7 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
         </p>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
+      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         <SectionTitle
           title={`Batch · ${rows.length} baris`}
           aside={
@@ -233,7 +233,7 @@ export function BatchForm({ onDone }: { onDone: (s: Submitted[]) => void }) {
                       invalid={!!errors.totalSKP}
                       className={cx(cell, "w-20 font-mono tabular-nums")}
                     />
-                    <span className="mt-1 block text-[11px] text-slate-500">{draftPredicate(row.totalSKP) ?? "—"}</span>
+                    <span className="mt-1 block text-xs text-slate-500">{draftPredicate(row.totalSKP) ?? "—"}</span>
                   </td>
                   <td className={cx(td, "pt-4")}>
                     {first ? (

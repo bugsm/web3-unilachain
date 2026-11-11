@@ -107,7 +107,7 @@ export function ApprovalsScreen() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
+      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         {queue.data && rows.length === 0 ? (
           <div className="px-6 py-20 text-center">
             <span className="mx-auto grid size-10 place-items-center rounded-full bg-ok-soft text-ok">

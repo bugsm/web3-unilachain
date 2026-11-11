@@ -27,7 +27,7 @@ function Detail({ record: r }: { record: RecordDetail }) {
   return (
     <div className="px-6 py-8 sm:px-8">
       <p className="font-mono text-xs text-slate-500 tabular-nums">{r.npm}</p>
-      <h2 className="mt-1 pr-10 text-2xl font-semibold tracking-[-0.02em] text-ink">{r.name}</h2>
+      <h2 className="mt-1 pr-10 display text-2xl text-ink">{r.name}</h2>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <StatusBadge status={r.status} />
         {tag && <Tag tone={r.pendingDraft?.type === "PENCABUTAN" ? "revoked" : "pending"}>{tag}</Tag>}
@@ -59,28 +59,28 @@ function Detail({ record: r }: { record: RecordDetail }) {
         ).map(([k, v, mono, wide]) => (
           <div key={k} className={wide ? "col-span-2" : undefined}>
             <dt className="text-xs text-slate-500">{k}</dt>
-            <dd className={cx("mt-1 font-medium text-ink", mono && "font-mono text-[13px] tabular-nums")}>{v}</dd>
+            <dd className={cx("mt-1 font-medium text-ink", mono && "font-mono text-label tabular-nums")}>{v}</dd>
           </div>
         ))}
       </dl>
 
       <section className="mt-10">
-        <h3 className="mb-5 text-[13px] font-semibold text-ink">Rantai pengesahan</h3>
+        <h3 className="mb-5 text-label font-semibold text-ink">Rantai pengesahan</h3>
         <CustodySteps status={r.status} history={r.history} layout="vertical" />
       </section>
 
       <section className="mt-10">
-        <h3 id="riwayat" className="mb-3 text-[13px] font-semibold text-ink">
+        <h3 id="riwayat" className="mb-3 text-label font-semibold text-ink">
           Riwayat
         </h3>
         <ol aria-label="Riwayat" className="border-t border-line">
           {history.map((e, i) => (
             <li key={`${e.at}-${i}`} className="grid grid-cols-[72px_1fr] gap-3 border-b border-line py-3.5">
-              <span className="pt-0.5 font-mono text-[11px] text-slate-400 tabular-nums">{formatDate(e.at)}</span>
+              <span className="pt-0.5 font-mono text-xs text-slate-400 tabular-nums">{formatDate(e.at)}</span>
               <div className="min-w-0">
                 <p className="text-sm">
                   {e.kind === "ledger" ? (
-                    <span className="font-mono text-[13px] font-medium text-ink">{e.action}</span>
+                    <span className="font-mono text-label font-medium text-ink">{e.action}</span>
                   ) : (
                     <span className="font-medium text-ink">{ACTION_LABEL[e.action]}</span>
                   )}
@@ -97,7 +97,7 @@ function Detail({ record: r }: { record: RecordDetail }) {
                   {e.txId ? (
                     <Hash value={e.txId} />
                   ) : (
-                    <span className="text-[11px] font-medium text-slate-400">off-chain</span>
+                    <span className="text-xs font-medium text-slate-400">off-chain</span>
                   )}
                 </div>
               </div>

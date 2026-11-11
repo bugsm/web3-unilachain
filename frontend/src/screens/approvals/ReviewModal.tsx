@@ -21,7 +21,7 @@ function Meta({ rows }: { rows: Array<[string, string, boolean?]> }) {
       {rows.map(([k, v, mono]) => (
         <div key={k} className="grid grid-cols-[130px_1fr] gap-4 py-3">
           <dt className="text-slate-500">{k}</dt>
-          <dd className={cx("font-medium break-words text-ink", mono && "font-mono text-[13px] tabular-nums")}>{v}</dd>
+          <dd className={cx("font-medium break-words text-ink", mono && "font-mono text-label tabular-nums")}>{v}</dd>
         </div>
       ))}
     </dl>
@@ -130,7 +130,7 @@ export function ReviewModal({
         <div className="grid grid-cols-12 gap-8">
           <div className="col-span-12 md:col-span-7">
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-[13px] font-semibold text-ink">
+              <p className="text-label font-semibold text-ink">
                 {draft?.type === "PERUBAHAN" ? "Perubahan diusulkan" : "Metadata"}
               </p>
               {record && <StatusBadge status={record.status} />}
@@ -194,7 +194,7 @@ export function ReviewModal({
             )}
           </div>
           <div className="col-span-12 md:col-span-5">
-            <p className="mb-4 text-[13px] font-semibold text-ink">Rantai pengesahan</p>
+            <p className="mb-4 text-label font-semibold text-ink">Rantai pengesahan</p>
             {record && <CustodySteps status={record.status} history={detail.data?.history ?? []} layout="vertical" />}
             <p className="mt-6 border-t border-line pt-4 text-xs text-slate-500">
               Anda menandatangani sebagai <span className="font-mono text-slate-700">{user.actorId}</span>

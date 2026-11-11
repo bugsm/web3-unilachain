@@ -89,7 +89,7 @@ export function SingleForm({ initialNpm, onDone }: { initialNpm: string; onDone:
 
   return (
     <form onSubmit={submit} noValidate className="grid grid-cols-12 gap-6">
-      <div className="col-span-12 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)] lg:col-span-8">
+      <div className="col-span-12 overflow-hidden rounded-2xl border border-line bg-white shadow-card lg:col-span-8">
         <FormGroup index="01" title="Identitas lulusan" note="NPM menjadi kunci aset di world state. Digit ke-4 menunjukkan fakultas.">
           <Field label="NPM" error={err("npm")} hint="10 digit Nomor Pokok Mahasiswa">
             <Input
@@ -110,7 +110,7 @@ export function SingleForm({ initialNpm, onDone }: { initialNpm: string; onDone:
 
         <FormGroup index="02" title="Fakultas" note="Mengikuti akun Anda. Penerbit (issuer) diisi dari sertifikat Dekan saat menyetujui.">
           <div>
-            <p className="mb-1.5 text-[13px] font-medium text-slate-700">Fakultas penerbit</p>
+            <p className="mb-1.5 text-label font-medium text-slate-700">Fakultas penerbit</p>
             <p className="flex h-10 items-center rounded-lg border border-line bg-canvas px-3 font-mono text-sm text-slate-700">
               {faculty} · {fac.unitCode}
             </p>
@@ -185,8 +185,8 @@ export function SingleForm({ initialNpm, onDone }: { initialNpm: string; onDone:
 
       <aside className="col-span-12 lg:col-span-4">
         <div className="space-y-6 lg:sticky lg:top-24">
-          <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
-            <SectionTitle title="Pratinjau aset" aside={<span className="font-mono text-[11px] text-slate-400">SahkanDekan</span>} />
+          <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+            <SectionTitle title="Pratinjau aset" aside={<span className="font-mono text-xs text-slate-400">SahkanDekan</span>} />
             <dl className="divide-y divide-line px-5 py-2 font-mono text-xs">
               {preview.map(([k, v]) => (
                 <div key={k} className="grid grid-cols-[110px_1fr] gap-3 py-2">

@@ -72,7 +72,7 @@ export function VerifyResult() {
   const hero = (
     <section className="pt-4 pb-14 lg:pb-20">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[14px]">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
           <Link to="/verifikasi" className="text-white/55 transition-colors hover:text-white">
             Verifikasi
           </Link>
@@ -82,7 +82,7 @@ export function VerifyResult() {
         <div className="flex items-center gap-2">
           <Link
             to="/verifikasi"
-            className="inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[14px] text-white/70 transition-colors hover:bg-white/8 hover:text-white"
+            className="inline-flex h-10 items-center gap-2 rounded-full px-3.5 text-sm text-white/70 transition-colors hover:bg-white/8 hover:text-white"
           >
             <ArrowLeft size={15} /> Verifikasi lain
           </Link>
@@ -90,7 +90,7 @@ export function VerifyResult() {
             type="button"
             onClick={() => window.print()}
             disabled={!data}
-            className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-4 text-[14px] font-medium text-ink transition-[translate,background-color] duration-150 ease-out-ui hover:-translate-y-px hover:bg-white/90 active:translate-y-0 disabled:opacity-40"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-ink transition-[translate,background-color] duration-150 ease-out-ui hover:-translate-y-px hover:bg-white/90 active:translate-y-0 disabled:opacity-40"
           >
             <Printer size={15} /> Cetak hasil
           </button>
@@ -103,7 +103,7 @@ export function VerifyResult() {
         </div>
       )}
       {result.loading && !data && (
-        <p aria-busy="true" className="mt-14 text-[15px] text-white/55">
+        <p aria-busy="true" className="mt-14 text-body text-white/55">
           Membaca status dari ledger…
         </p>
       )}
@@ -114,17 +114,17 @@ export function VerifyResult() {
             <span className={cx("enter inline-flex size-12 items-center justify-center rounded-2xl ring-1", o.chip)}>
               <o.icon size={24} strokeWidth={2} />
             </span>
-            <p className="enter mt-6 text-[14px] text-white/55" style={d(60)}>
+            <p className="enter mt-6 text-sm text-white/55" style={d(60)}>
               Status SKPI di ledger
             </p>
-            <h1 className="display enter mt-2 text-[52px] leading-none sm:text-[68px]" style={d(100)}>
+            <h1 className="display enter mt-2 text-display-md leading-none sm:text-display-xl" style={d(100)}>
               {o.label}
             </h1>
-            <p className="enter mt-6 max-w-[560px] text-[17px] leading-relaxed text-white/65" style={d(160)}>
+            <p className="enter mt-6 max-w-[540px] text-lead leading-relaxed text-white/65" style={d(160)}>
               {o.text}
             </p>
             {data.status === "DICABUT" && (
-              <p className="enter mt-3 text-[15px] font-medium text-[#ff8a99]" style={d(200)}>
+              <p className="enter mt-3 text-body font-medium text-[#ff8a99]" style={d(200)}>
                 Hubungi Universitas Lampung untuk keterangan pencabutan.
               </p>
             )}
@@ -141,8 +141,8 @@ export function VerifyResult() {
               ] as const
             ).map(([k, v, mono]) => (
               <div key={k} className="flex items-baseline justify-between gap-4 bg-ink-2 px-4 py-3.5 sm:block sm:px-5 lg:flex">
-                <dt className="text-[13px] text-white/50">{k}</dt>
-                <dd className={cx("text-right text-[15px] text-white sm:mt-1 sm:text-left lg:mt-0 lg:text-right", mono && "font-mono tabular-nums")}>{v}</dd>
+                <dt className="text-label text-white/50">{k}</dt>
+                <dd className={cx("text-right text-body text-white sm:mt-1 sm:text-left lg:mt-0 lg:text-right", mono && "font-mono tabular-nums")}>{v}</dd>
               </div>
             ))}
           </dl>
@@ -158,9 +158,9 @@ export function VerifyResult() {
           {skpi ? (
             <div className="grid gap-10 lg:grid-cols-12 lg:gap-6">
               <section className="lg:col-span-7">
-                <h2 className="display text-[26px] leading-tight text-ink">Cocokkan dengan dokumen</h2>
-                <p className="mt-2 text-[15px] text-slate-600">Setiap data harus sama dengan yang tercetak pada SKPI.</p>
-                <table aria-label="Metadata SKPI" className="mt-6 w-full border-t border-ink text-[15px]">
+                <h2 className="display text-title text-ink">Cocokkan dengan dokumen</h2>
+                <p className="mt-2 text-body text-slate-600">Setiap data harus sama dengan yang tercetak pada SKPI.</p>
+                <table aria-label="Metadata SKPI" className="mt-6 w-full border-t border-ink text-body">
                   <tbody>
                     {(
                       [
@@ -178,7 +178,7 @@ export function VerifyResult() {
                         <th scope="row" className="w-40 py-3.5 pr-4 text-left align-top font-normal text-slate-500 sm:w-48">
                           {k}
                         </th>
-                        <td className={cx("py-3.5 font-medium break-words text-ink", mono && "font-mono text-[14px] tabular-nums")}>{v}</td>
+                        <td className={cx("py-3.5 font-medium break-words text-ink", mono && "font-mono text-sm tabular-nums")}>{v}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -186,10 +186,10 @@ export function VerifyResult() {
               </section>
 
               <section aria-labelledby="penanda-tangan" className="lg:col-span-5">
-                <h2 id="penanda-tangan" className="display text-[26px] leading-tight text-ink">
+                <h2 id="penanda-tangan" className="display text-title text-ink">
                   Penanda tangan
                 </h2>
-                <p className="mt-2 text-[15px] text-slate-600">Dua pengesahan, masing-masing dengan sertifikat X.509.</p>
+                <p className="mt-2 text-body text-slate-600">Dua pengesahan, masing-masing dengan sertifikat X.509.</p>
                 <ol className="mt-6 border-t border-ink">
                   {[
                     { step: "Tahap 1 · Dekan", name: data.dekanName, role: skpi.issuer, at: skpi.issuedTimestamp },
@@ -198,15 +198,15 @@ export function VerifyResult() {
                     <li key={s.step} className="grid grid-cols-[20px_1fr] gap-3 border-b border-line py-4">
                       <span aria-hidden className="mt-1.5 size-2.5 rounded-full border-2 border-gold-ink" />
                       <div>
-                        <p className="text-[13px] text-slate-500">{s.step}</p>
+                        <p className="text-label text-slate-500">{s.step}</p>
                         <p className="mt-1 font-medium text-ink">{s.name ?? s.role}</p>
-                        {s.name && s.role && <p className="mt-0.5 text-[14px] text-slate-600">{s.role}</p>}
-                        {s.at && <p className="mt-1 text-[13px] text-slate-500 tabular-nums">{formatDateTime(s.at)}</p>}
+                        {s.name && s.role && <p className="mt-0.5 text-sm text-slate-600">{s.role}</p>}
+                        {s.at && <p className="mt-1 text-label text-slate-500 tabular-nums">{formatDateTime(s.at)}</p>}
                       </div>
                     </li>
                   ))}
                 </ol>
-                <p className="mt-4 text-[13px] leading-relaxed text-slate-500">
+                <p className="mt-4 text-label leading-relaxed text-slate-500">
                   Tanda tangan tersimpan di ledger kanal <span className="font-mono">skpi-channel</span> (UnilaMSP). Nama pejabat diambil dari
                   tabel periode jabatan berdasarkan waktu pengesahan.
                 </p>
@@ -215,7 +215,7 @@ export function VerifyResult() {
           ) : (
             <section className="grid gap-6 lg:grid-cols-12">
               <div className="lg:col-span-4">
-                <h2 className="display text-[26px] leading-tight text-ink">Langkah berikutnya</h2>
+                <h2 className="display text-title text-ink">Langkah berikutnya</h2>
               </div>
               <ul className="divide-y divide-line border-y border-ink lg:col-span-6">
                 {[
@@ -223,7 +223,7 @@ export function VerifyResult() {
                   "SKPI yang belum disahkan Rektor belum dapat diverifikasi sebagai sah.",
                   "Bila data sudah benar, hubungi bagian akademik Universitas Lampung untuk konfirmasi.",
                 ].map((t) => (
-                  <li key={t} className="py-4 text-[15px] text-slate-600">
+                  <li key={t} className="py-4 text-body text-slate-600">
                     {t}
                   </li>
                 ))}
@@ -235,7 +235,7 @@ export function VerifyResult() {
               </div>
             </section>
           )}
-          <p className="mt-12 text-[13px] text-slate-500">
+          <p className="mt-12 text-label text-slate-500">
             Hasil ini memverifikasi data SKPI di ledger, bukan menggantikan dokumen resmi. Gunakan “Cetak hasil” untuk lembar bukti
             pemeriksaan satu halaman.
           </p>

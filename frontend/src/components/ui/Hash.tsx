@@ -16,7 +16,7 @@ export function Hash({ value, full = false }: { value: string; full?: boolean })
       <button
         type="button"
         aria-label={copied ? "Hash transaksi disalin" : "Salin hash transaksi"}
-        className="-mt-0.5 grid shrink-0 place-items-center rounded p-0.5 text-slate-400 transition-[scale,color] duration-150 hover:bg-slate-100 hover:text-slate-700 active:scale-[0.9]"
+        className="-mt-0.5 grid shrink-0 place-items-center rounded-md p-0.5 text-slate-400 transition-[scale,color] duration-150 hover:bg-slate-100 hover:text-slate-700 active:scale-[0.9]"
         onClick={(e) => {
           e.stopPropagation()
           navigator.clipboard?.writeText(value).catch(() => undefined)

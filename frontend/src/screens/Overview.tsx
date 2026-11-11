@@ -102,7 +102,7 @@ export function Overview() {
         </div>
       )}
 
-      <section aria-label="Status SKPI per tahap" className="grid grid-cols-12 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)]">
+      <section aria-label="Status SKPI per tahap" className="grid grid-cols-12 overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         <div className="col-span-12 grid grid-cols-1 sm:grid-cols-3 lg:col-span-9">
           {FLOW.map((f, i) => {
             const mine = f.status === stage
@@ -123,7 +123,7 @@ export function Overview() {
                   {mine && <span className="text-xs font-semibold text-brand">Tahap Anda</span>}
                 </span>
                 {/* Angka fungsional: tanpa animasi. */}
-                <span className="mt-auto pt-8 text-[52px] leading-none font-semibold tracking-[-0.04em] text-ink tabular-nums">
+                <span className="mt-auto pt-8 text-display-md leading-none font-semibold tracking-tight text-ink tabular-nums">
                   {count(f.status)}
                 </span>
                 <span className="mt-2 text-sm text-slate-500">{f.hint}</span>
@@ -146,7 +146,7 @@ export function Overview() {
               <StatusBadge status="DICABUT" />
               <span className="mt-2 block text-xs text-slate-500">Tidak lagi sah</span>
             </span>
-            <span className="text-[28px] font-semibold tracking-tight text-slate-700 tabular-nums">{count("DICABUT")}</span>
+            <span className="text-title font-semibold tracking-tight text-slate-700 tabular-nums">{count("DICABUT")}</span>
           </button>
           <button
             type="button"
@@ -157,7 +157,7 @@ export function Overview() {
               <Badge tone="muted">Ditolak</Badge>
               <span className="mt-2 block text-xs text-slate-500">Ditolak Dekan atau Rektor</span>
             </span>
-            <span className="text-[28px] font-semibold tracking-tight text-slate-700 tabular-nums">
+            <span className="text-title font-semibold tracking-tight text-slate-700 tabular-nums">
               {count("DITOLAK_DEKAN", "DITOLAK_REKTOR")}
             </span>
           </button>
@@ -165,7 +165,7 @@ export function Overview() {
       </section>
 
       <div className="mt-8 grid grid-cols-12 gap-6">
-        <section aria-labelledby={ids.table} className="col-span-12 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgb(12_10_8/0.04)] lg:col-span-8">
+        <section aria-labelledby={ids.table} className="col-span-12 overflow-hidden rounded-2xl border border-line bg-white shadow-card lg:col-span-8">
           <SectionTitle
             id={ids.table}
             title={tableTitle}
@@ -226,7 +226,7 @@ export function Overview() {
                 key={`${e.npm}-${e.at}-${e.action}`}
                 className="grid grid-cols-[52px_1fr] gap-3 border-b border-line py-3.5 last:border-b-0"
               >
-                <span className="pt-0.5 font-mono text-[11px] text-slate-400 tabular-nums">{formatTime(e.at)}</span>
+                <span className="pt-0.5 font-mono text-xs text-slate-400 tabular-nums">{formatTime(e.at)}</span>
                 <div className="min-w-0">
                   <button type="button" onClick={() => navigate(`/daftar/${e.npm}`)} className="block w-full min-w-0 text-left">
                     <p className="text-sm text-ink">
@@ -239,7 +239,7 @@ export function Overview() {
                     {e.txId ? (
                       <Hash value={e.txId} />
                     ) : (
-                      <span className="text-[11px] font-medium text-slate-400">off-chain</span>
+                      <span className="text-xs font-medium text-slate-400">off-chain</span>
                     )}
                   </div>
                 </div>

@@ -5,7 +5,7 @@ import { facultyByCode } from "@/domain/faculty"
 
 export function Candidates({ q, candidates, truncated }: { q: string; candidates: VerifyCandidate[]; truncated: boolean }) {
   return (
-    <section className="mt-4 overflow-hidden rounded-2xl bg-white text-ink shadow-[0_24px_60px_-30px_rgb(0_0_0/0.6)]">
+    <section className="mt-4 overflow-hidden rounded-2xl bg-white text-ink shadow-panel">
       <p className="border-b border-line px-5 py-3 text-sm text-slate-600">
         {candidates.length ? (
           <>

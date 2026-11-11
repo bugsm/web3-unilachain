@@ -39,7 +39,7 @@ export function Field({
   const note = error || hint
   return (
     <div className={cx("block", className)}>
-      <label htmlFor={id} className="mb-1.5 block text-[13px] font-medium text-slate-700">
+      <label htmlFor={id} className="mb-1.5 block text-label font-medium text-slate-700">
         {label}
       </label>
       <FieldContext.Provider value={{ id, describedBy: note ? noteId : undefined, invalid: !!error }}>

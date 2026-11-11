@@ -23,7 +23,7 @@ export function LedgerBand({
       <PublicNav tone="dark" />
       <Inner className="relative mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-5 sm:px-10 lg:px-20">{children}</Inner>
       {foot && (
-        <div className="relative mx-auto flex w-full max-w-[1280px] flex-wrap justify-between gap-x-6 gap-y-1 px-5 pb-6 text-[13px] text-white/40 sm:px-10 lg:px-20">
+        <div className="relative mx-auto flex w-full max-w-[1280px] flex-wrap justify-between gap-x-6 gap-y-1 px-5 pb-6 text-label text-white/40 sm:px-10 lg:px-20">
           {foot}
         </div>
       )}
