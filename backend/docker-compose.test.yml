@@ -1,0 +1,12 @@
+# Postgres khusus test (npm run test:db / unit test HTTP). Data dibuang setiap down.
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: skpi_test
+      POSTGRES_USER: skpi_test
+      POSTGRES_PASSWORD: skpi_test
+    ports:
+      - "127.0.0.1:55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
