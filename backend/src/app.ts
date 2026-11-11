@@ -4,6 +4,7 @@ import type pg from "pg"
 import type { Config } from "./config.js"
 import type { Ledger } from "./fabric/ledger.js"
 import { errorHandler, notFoundHandler } from "./http/errors.js"
+import { approvalRoutes } from "./http/routes/approvals.js"
 import { authRoutes } from "./http/routes/auth.js"
 import { draftRoutes } from "./http/routes/drafts.js"
 import type { Ctx } from "./services/context.js"
@@ -27,6 +28,7 @@ export function createApp(deps: AppDeps) {
   const ctx: Ctx = { config: deps.config, pool: deps.pool, ledger: deps.ledger, now: deps.now ?? (() => new Date()) }
   const api = express.Router()
   api.use("/auth", authRoutes(deps))
+  api.use(approvalRoutes(ctx))
   api.use("/drafts", draftRoutes(ctx))
   app.use("/api", api)
 
