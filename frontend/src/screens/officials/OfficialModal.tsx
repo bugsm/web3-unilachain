@@ -20,10 +20,11 @@ export function OfficialModal({ action, onClose, onSaved }: { action: OfficialAc
   const lock = useRef(false)
   const nameError = touched ? validateOfficialName(name) : undefined
   const today = wibDate(new Date().toISOString())
+  const unchanged = action.kind === "koreksi" && normalizeOfficialName(name) === action.period.name
 
   async function save() {
     setTouched(true)
-    if (lock.current || validateOfficialName(name) || (action.kind === "pergantian" && !from)) return
+    if (lock.current || unchanged || validateOfficialName(name) || (action.kind === "pergantian" && !from)) return
     lock.current = true
     setSaving(true)
     setError(null)
@@ -55,7 +56,7 @@ export function OfficialModal({ action, onClose, onSaved }: { action: OfficialAc
           <Button variant="ghost" onClick={onClose} disabled={saving}>
             Batal
           </Button>
-          <Button variant="primary" loading={saving} onClick={save}>
+          <Button variant="primary" loading={saving} disabled={unchanged} onClick={save}>
             Simpan
           </Button>
         </>

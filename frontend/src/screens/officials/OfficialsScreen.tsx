@@ -62,7 +62,12 @@ function HistoryDrawer({
   const last = useRef<Office | null>(null)
   if (office) last.current = office
   const shown = office ?? last.current
-  const changes = useAsync(() => (shown ? api.officialChanges(shown) : Promise.resolve([])), [api, shown, official?.lastChange?.id])
+  // Data disimpan bersama jabatannya: log jabatan lain tidak tampil selama memuat.
+  const loaded = useAsync(
+    () => (shown ? api.officialChanges(shown).then((list) => ({ office: shown, list })) : Promise.resolve(null)),
+    [api, shown, official?.lastChange?.id],
+  )
+  const changes = { ...loaded, data: loaded.data && loaded.data.office === shown ? loaded.data.list : undefined }
   const label = shown ? OFFICE_LABEL(shown) : ""
   return (
     <Drawer open={!!office} onClose={onClose} label={`Riwayat ${label}`}>

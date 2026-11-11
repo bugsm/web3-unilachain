@@ -52,6 +52,8 @@ export function correct(s: OfficialsStore, office: Office, periodId: string, nam
   const clean = assertName(name)
   const period = periodsOf(s, office).find((p) => p.id === periodId)
   if (!period) throw new ApiError(404, "NOT_FOUND", "Periode jabatan tidak ditemukan.")
+  // Simpan tanpa perubahan tidak boleh menggeser "terakhir diubah oleh".
+  if (clean === period.name) throw new ApiError(400, "VALIDATION", "Nama tidak berubah.")
   log(s, { office, kind: "KOREKSI", before: period.name, after: clean, by, at })
   period.name = clean
   return officialOf(s, office)

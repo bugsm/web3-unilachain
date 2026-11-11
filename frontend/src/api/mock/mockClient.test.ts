@@ -366,3 +366,11 @@ describe("pejabat penanda tangan", () => {
     expect(changes.map((x) => x.kind)).toEqual(["KOREKSI", "PERGANTIAN"])
   })
 })
+
+test("koreksi tanpa perubahan nama ditolak dan tidak tercatat", async () => {
+  const c = createMockClient({ latencyMs: 0 })
+  await loginAs(c, "admin.fmipa@unila.ac.id")
+  const r = (await c.listOfficials())[0]
+  await expectApiError(c.correctOfficial("REKTOR", r.periods[0].id, `  ${r.periods[0].name}  `), 400)
+  expect((await c.listOfficials())[0].lastChange).toBeNull()
+})

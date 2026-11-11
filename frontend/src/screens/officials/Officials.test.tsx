@@ -73,3 +73,30 @@ test("menu Pejabat tersedia untuk semua staf", async () => {
   await renderApp("/ikhtisar", { as: "rektor@unila.ac.id" })
   expect((await screen.findAllByRole("link", { name: /Pejabat/ }))[0]).toBeInTheDocument()
 })
+
+test("Simpan koreksi nonaktif selama nama belum diubah", async () => {
+  const { user, rektor } = await open("admin.fmipa@unila.ac.id")
+  await user.click(within(rektor).getByRole("button", { name: "Koreksi nama" }))
+  const modal = await screen.findByRole("dialog", { name: "Koreksi nama Rektor" })
+  expect(within(modal).getByRole("button", { name: "Simpan" })).toBeDisabled()
+})
+
+test("riwayat jabatan lain tidak menampilkan perubahan jabatan sebelumnya saat memuat", async () => {
+  const { user, client, rektor } = await open("admin.fmipa@unila.ac.id")
+  const r = (await client.listOfficials())[0]
+  await client.correctOfficial("REKTOR", r.periods[0].id, "Prof. Lusmeilia Afriani")
+  await user.click(within(rektor).getByRole("button", { name: "Riwayat" }))
+  await within(await screen.findByRole("dialog", { name: "Riwayat Rektor" })).findByRole("list", { name: "Perubahan" })
+  await user.keyboard("{Escape}")
+  let release!: () => void
+  const real = client.officialChanges.bind(client)
+  vi.spyOn(client, "officialChanges").mockImplementation(async (o) => {
+    await new Promise<void>((res) => (release = res))
+    return real(o)
+  })
+  await user.click(within(dekanRow("FMIPA")).getByRole("button", { name: "Riwayat" }))
+  const drawer = await screen.findByRole("dialog", { name: "Riwayat Dekan FMIPA" })
+  expect(within(drawer).queryByText(/Prof. Lusmeilia Afriani/)).toBeNull()
+  release()
+  expect(await within(drawer).findByText("Belum ada perubahan.")).toBeInTheDocument()
+})
