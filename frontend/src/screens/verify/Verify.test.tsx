@@ -119,3 +119,25 @@ test("data uji demo tidak tampil di luar mode mock", async () => {
   await portal()
   expect(screen.queryByText("Data uji untuk demo")).toBeNull()
 })
+
+test("pencarian baru yang gagal tidak menampilkan kandidat lama; kirim ulang nama sama mencoba lagi", async () => {
+  const client = createMockClient({ latencyMs: 0 })
+  const real = client.searchPublic.bind(client)
+  const spy = vi.spyOn(client, "searchPublic").mockImplementation((q) =>
+    q.startsWith("budi") ? Promise.reject(new ApiError(429, "RATE_LIMITED", "Too many")) : real(q),
+  )
+  const { user } = await renderApp("/verifikasi", { client })
+  await screen.findByRole("heading", { name: /Periksa keabsahan SKPI/ })
+  await user.type(input(), "rizky maulana")
+  await user.click(submit())
+  await screen.findByRole("list", { name: "Kandidat lulusan" })
+  await user.clear(input())
+  await user.type(input(), "budi santoso")
+  await user.click(submit())
+  expect(await screen.findByText("Terlalu banyak permintaan, coba lagi dalam beberapa saat.")).toBeInTheDocument()
+  expect(screen.queryByRole("list", { name: "Kandidat lulusan" })).toBeNull()
+  expect(screen.queryByText(/cocok dengan/)).toBeNull()
+  const calls = spy.mock.calls.length
+  await user.click(submit())
+  await vi.waitFor(() => expect(spy.mock.calls.length).toBe(calls + 1))
+})

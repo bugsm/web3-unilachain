@@ -39,7 +39,9 @@ export function PublicVerify() {
   const q = params.get("q") ?? ""
   const [value, setValue] = useState(q)
   const [error, setError] = useState<string | undefined>()
-  const search = useAsync(() => (q ? api.searchPublic(q) : Promise.resolve(null)), [api, q])
+  // Hasil disimpan bersama kuerinya: hasil kueri lama tidak pernah tampil di bawah kueri baru (saat memuat atau gagal).
+  const search = useAsync(() => (q ? api.searchPublic(q).then((r) => ({ q, ...r })) : Promise.resolve(null)), [api, q])
+  const current = search.data && search.data.q === q && !search.loading ? search.data : null
 
   function submit(e: FormEvent) {
     e.preventDefault()
@@ -52,7 +54,9 @@ export function PublicVerify() {
     }
     if (name.length < 3) return setError(INVALID)
     setError(undefined)
-    setParams({ q: name })
+    // Nama sama dikirim ulang (mis. setelah 429): muat ulang, karena parameter URL tidak berubah.
+    if (name === q) search.reload()
+    else setParams({ q: name })
   }
 
   return (
@@ -128,7 +132,7 @@ export function PublicVerify() {
               <LoadError error={search.error} onRetry={search.reload} />
             </div>
           )}
-          {q && search.data && <Candidates q={q} candidates={search.data.candidates} truncated={search.data.truncated} />}
+          {current && <Candidates q={q} candidates={current.candidates} truncated={current.truncated} />}
         </div>
       </section>
 
