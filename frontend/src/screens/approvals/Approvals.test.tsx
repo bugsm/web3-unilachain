@@ -131,3 +131,15 @@ test("alasan multi-baris dikirim sebagai satu baris", async () => {
   await user.click(within(dialog).getByRole("button", { name: /Tolak \(TolakRektor\)/ }))
   await waitFor(() => expect(spy).toHaveBeenCalledWith("2015061024", "Lampiran belum lengkap. Mohon dilengkapi."))
 })
+
+test("pencabutan tidak bisa disahkan massal; daftar massal menampilkan jenis", async () => {
+  const { user, queue } = await open("dekan.fmipa@unila.ac.id")
+  expect(screen.getByRole("checkbox", { name: "Pilih Salsabila Putri Ramadhani" })).toBeDisabled()
+  await user.click(screen.getByRole("checkbox", { name: "Pilih semua" }))
+  const n = queue.filter((q) => !(q.kind === "draft" && q.draft.type === "PENCABUTAN")).length
+  await user.click(screen.getByRole("button", { name: /Sahkan terpilih/ }))
+  const dialog = await screen.findByRole("dialog", { name: `Sahkan ${n} draft?` })
+  expect(within(dialog).queryByText("Salsabila Putri Ramadhani")).toBeNull()
+  expect(within(dialog).getAllByText("Pencatatan").length).toBeGreaterThan(0)
+  expect(within(dialog).getByText("Perubahan")).toBeInTheDocument()
+})

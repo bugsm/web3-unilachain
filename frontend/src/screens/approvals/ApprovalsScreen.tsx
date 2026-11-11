@@ -13,7 +13,7 @@ import { formatDateTime } from "@/domain/format"
 import { predicateOf } from "@/domain/skpi"
 import { DRAFT_TYPE_LABEL } from "@/domain/status"
 import { BulkModal } from "./BulkModal"
-import { dataOf, keyOf, npmOf, sinceOf } from "./queue"
+import { bulkable, dataOf, keyOf, npmOf, sinceOf } from "./queue"
 import { ReviewModal } from "./ReviewModal"
 
 export function ApprovalsScreen() {
@@ -35,8 +35,9 @@ export function ApprovalsScreen() {
       return !q || `${d.name} ${d.npm} ${d.skpiId} ${d.programStudy}`.toLowerCase().includes(q)
     })
   }, [items, query])
-  const picked = items.filter((it) => selected.has(keyOf(it)))
-  const allChecked = rows.length > 0 && rows.every((r) => selected.has(keyOf(r)))
+  const picked = items.filter((it) => selected.has(keyOf(it)) && bulkable(it))
+  const selectable = rows.filter(bulkable)
+  const allChecked = selectable.length > 0 && selectable.every((r) => selected.has(keyOf(r)))
 
   // Tautan dari ikhtisar: /antrean?tinjau=<npm> membuka modal tinjau.
   const focus = params.get("tinjau")
@@ -125,7 +126,7 @@ export function ApprovalsScreen() {
                       type="checkbox"
                       aria-label="Pilih semua"
                       checked={allChecked}
-                      onChange={() => setSelected(allChecked ? new Set() : new Set(rows.map(keyOf)))}
+                      onChange={() => setSelected(allChecked ? new Set() : new Set(selectable.map(keyOf)))}
                       className="size-4 accent-[#1D4ED8]"
                     />
                   </th>
@@ -153,6 +154,8 @@ export function ApprovalsScreen() {
                           type="checkbox"
                           aria-label={`Pilih ${d.name}`}
                           checked={on}
+                          disabled={!bulkable(it)}
+                          title={bulkable(it) ? undefined : "Pencabutan ditinjau satu per satu"}
                           onChange={() => toggle(key)}
                           className="size-4 accent-[#1D4ED8]"
                         />

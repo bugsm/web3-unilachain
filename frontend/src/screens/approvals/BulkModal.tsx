@@ -4,7 +4,8 @@ import { userMessage } from "@/api/errors"
 import type { QueueItem } from "@/api/types"
 import { useApi } from "@/app/ApiProvider"
 import { useUser } from "@/app/session"
-import { Button, Modal, cx } from "@/components/ui"
+import { Button, Modal, Tag, cx } from "@/components/ui"
+import { DRAFT_TYPE_LABEL } from "@/domain/status"
 import { approve, dataOf, keyOf } from "./queue"
 
 interface Outcome {
@@ -87,7 +88,12 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
           return (
             <li key={keyOf(item)} className="flex items-start justify-between gap-4 px-4 py-2.5 text-sm">
               <span className="min-w-0">
-                <span className="block font-medium text-slate-900">{d.name}</span>
+                <span className="flex flex-wrap items-center gap-2 font-medium text-slate-900">
+                  {d.name}
+                  {item.kind === "draft" && (
+                    <Tag tone={item.draft.type === "PERUBAHAN" ? "pending" : "muted"}>{DRAFT_TYPE_LABEL[item.draft.type]}</Tag>
+                  )}
+                </span>
                 {error && <span className="mt-0.5 block text-xs text-[#E11D48]">{error}</span>}
               </span>
               <span className="flex shrink-0 items-center gap-2">

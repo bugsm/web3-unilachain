@@ -37,3 +37,6 @@ export const approve = (api: ApiClient, q: QueueItem) =>
 
 export const reject = (api: ApiClient, q: QueueItem, reason: string) =>
   q.kind === "draft" ? api.rejectDraft(q.draft.id, reason) : api.rektorReject(q.record.npm, reason)
+
+/** Pencabutan bersifat permanen: wajib ditinjau satu per satu, tidak ikut pengesahan massal. */
+export const bulkable = (q: QueueItem) => !(q.kind === "draft" && q.draft.type === "PENCABUTAN")
