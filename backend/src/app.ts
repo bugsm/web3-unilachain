@@ -7,6 +7,7 @@ import { errorHandler, notFoundHandler } from "./http/errors.js"
 import { approvalRoutes } from "./http/routes/approvals.js"
 import { authRoutes } from "./http/routes/auth.js"
 import { draftRoutes } from "./http/routes/drafts.js"
+import { officialRoutes } from "./http/routes/officials.js"
 import { readRoutes } from "./http/routes/records.js"
 import type { Ctx } from "./services/context.js"
 
@@ -31,6 +32,7 @@ export function createApp(deps: AppDeps) {
   api.use("/auth", authRoutes(deps))
   api.use(approvalRoutes(ctx))
   api.use("/drafts", draftRoutes(ctx))
+  api.use("/officials", officialRoutes(ctx))
   api.use(readRoutes(ctx))
   app.use("/api", api)
 
