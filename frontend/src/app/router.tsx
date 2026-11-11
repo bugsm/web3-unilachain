@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from "react-router"
 import { NAV, Shell } from "@/components/Shell"
 import { ApprovalsScreen } from "@/screens/approvals/ApprovalsScreen"
 import { Login } from "@/screens/Login"
+import { OfficialsScreen } from "@/screens/officials/OfficialsScreen"
 import { Overview } from "@/screens/Overview"
 import { RecordScreen } from "@/screens/record/RecordScreen"
 import { RegistryScreen } from "@/screens/registry/RegistryScreen"
@@ -49,6 +50,7 @@ export function AppRoutes() {
           <Route path="/daftar/:npm" element={<RegistryScreen />} />
           <Route path="/catat" element={<RecordScreen />} />
           <Route path="/antrean" element={<ApprovalsScreen />} />
+          <Route path="/pejabat" element={<OfficialsScreen />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/verifikasi" replace />} />

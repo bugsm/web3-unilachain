@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { NavLink, useLocation } from "react-router"
-import { ArrowUpRight, FilePlus2, History, Inbox, LayoutGrid, LogOut, Menu, X, type LucideIcon } from "lucide-react"
+import { ArrowUpRight, FilePlus2, History, Inbox, LayoutGrid, LogOut, Menu, UserRoundPen, X, type LucideIcon } from "lucide-react"
 import type { Role, User } from "@/api/types"
 import { useApi } from "@/app/ApiProvider"
 import { useSession, useUser } from "@/app/session"
@@ -21,6 +21,7 @@ export const NAV: NavItem[] = [
   { to: "/catat", label: "Catat SKPI", icon: FilePlus2, roles: ["admin"] },
   { to: "/antrean", label: "Antrean pengesahan", icon: Inbox, roles: ["dekan", "rektor"] },
   { to: "/daftar", label: "Daftar & riwayat", icon: History, roles: ["admin", "dekan", "rektor"] },
+  { to: "/pejabat", label: "Pejabat", icon: UserRoundPen, roles: ["admin", "dekan", "rektor"] },
 ]
 
 const INITIALS: Record<Role, string> = { admin: "AF", dekan: "DK", rektor: "RK" }
