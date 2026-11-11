@@ -12,7 +12,7 @@ const LoginBody = z.object({ identifier: z.string().min(1).max(200), password: z
 export function authRoutes({ config, pool }: AppDeps) {
   const r = Router()
 
-  r.post("/login", perMinute(config.loginRateLimitPerMin), async (req, res) => {
+  r.post("/login", perMinute(config.loginRateLimitPerMin, { onlyFailures: true }), async (req, res) => {
     const body = LoginBody.safeParse(req.body)
     if (!body.success) throw badRequest("Email/NIP/NIDN dan kata sandi wajib diisi.")
     const row = await authenticate(pool, body.data.identifier, body.data.password)

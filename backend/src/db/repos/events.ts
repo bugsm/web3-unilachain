@@ -24,6 +24,16 @@ export const events = {
     return r.rows
   },
 
+  /** Waktu peristiwa terakhir per NPM. */
+  async lastActivity(q: Queryable, npms: string[]): Promise<Map<string, string>> {
+    if (!npms.length) return new Map()
+    const r = await q.query<{ npm: string; at: string }>(
+      `SELECT npm, ${ISO("max(at)")} AS at FROM events WHERE npm = ANY($1) GROUP BY npm`,
+      [npms],
+    )
+    return new Map(r.rows.map((x) => [x.npm, x.at]))
+  },
+
   /** Peristiwa terbaru dalam lingkup fakultas (null = semua); nama dari proyeksi atau draft terakhir. */
   async recent(q: Queryable, faculty: FacultyCode | null, limit: number): Promise<ActivityItem[]> {
     const r = await q.query<ActivityItem>(
