@@ -44,7 +44,7 @@ test("peran salah menampilkan pesan dan tetap di halaman masuk", async () => {
   await heading()
   await fill(user, "dekan.fmipa@unila.ac.id", "Rektor")
   await user.click(screen.getByRole("button", { name: /Masuk & Akses Konsol/ }))
-  expect(await screen.findByText("Anda tidak berwenang untuk tindakan ini.")).toBeInTheDocument()
+  expect(await screen.findByText("Akun ini tidak memegang peran tersebut. Pilih peran yang sesuai.")).toBeInTheDocument()
   expect(screen.getByRole("heading", { name: "Masuk ke Sistem Pengesahan SKPI" })).toBeInTheDocument()
 })
 

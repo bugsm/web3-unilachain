@@ -79,7 +79,7 @@ export function createMockClient(opts: { latencyMs?: number; seed?: boolean; now
       const acc = DEMO_ACCOUNTS.find((a) => a.email === identifier.trim().toLowerCase())
       if (!acc || password !== DEMO_PASSWORD)
         throw new ApiError(401, "INVALID_CREDENTIALS", "Email atau kata sandi salah.")
-      if (acc.role !== role) throw new ApiError(403, "ROLE_MISMATCH", "Akun ini tidak memegang peran tersebut.")
+      if (acc.role !== role) throw new ApiError(403, "ROLE_MISMATCH", "Akun ini tidak memegang peran tersebut. Pilih peran yang sesuai.")
       session = acc
       return toUser(acc)
     },

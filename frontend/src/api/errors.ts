@@ -22,7 +22,7 @@ const BY_STATUS: Record<number, string> = {
 export function userMessage(e: unknown): string {
   if (e instanceof ApiError) {
     // Galat login membawa pesannya sendiri (mis. sandi salah).
-    if (e.status === 401 && e.code === "INVALID_CREDENTIALS") return e.message
+    if (e.code === "INVALID_CREDENTIALS" || e.code === "ROLE_MISMATCH") return e.message
     return BY_STATUS[e.status] ?? (e.message || "Terjadi kesalahan.")
   }
   return "Terjadi kesalahan."

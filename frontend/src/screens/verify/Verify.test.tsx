@@ -116,6 +116,7 @@ test("429 dan 503 ditampilkan ramah, coba lagi memanggil ulang", async () => {
 })
 
 test("data uji demo tidak tampil di luar mode mock", async () => {
+  vi.stubEnv("VITE_API_MODE", "http")
   await portal()
   expect(screen.queryByText("Data uji untuk demo")).toBeNull()
 })
@@ -141,3 +142,5 @@ test("pencarian baru yang gagal tidak menampilkan kandidat lama; kirim ulang nam
   await user.click(submit())
   await vi.waitFor(() => expect(spy.mock.calls.length).toBe(calls + 1))
 })
+
+afterEach(() => vi.unstubAllEnvs())
