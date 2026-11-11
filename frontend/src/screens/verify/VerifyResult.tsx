@@ -157,7 +157,8 @@ export function VerifyResult() {
                   <dl className="mt-5 space-y-5 text-sm">
                     <div>
                       <dt className="text-xs text-slate-400">Tahap 1 · Dekan</dt>
-                      <dd className="mt-1 text-white">{skpi.issuer}</dd>
+                      {data.dekanName && <dd className="mt-1 text-white">{data.dekanName}</dd>}
+                      <dd className={data.dekanName ? "mt-0.5 text-xs text-slate-300" : "mt-1 text-white"}>{skpi.issuer}</dd>
                       <dd className="mt-0.5 text-xs text-slate-400 tabular-nums">{formatDateTime(skpi.issuedTimestamp)}</dd>
                     </div>
                     <div>
@@ -175,7 +176,7 @@ export function VerifyResult() {
                     </div>
                   </dl>
                   <p className="mt-5 border-t border-white/10 pt-4 text-xs leading-relaxed text-slate-400">
-                    Tanda tangan X.509 kedua pejabat tersimpan di blok ledger. Nama rektor diambil dari tabel periode jabatan berdasarkan
+                    Tanda tangan X.509 kedua pejabat tersimpan di blok ledger. Nama pejabat diambil dari tabel periode jabatan berdasarkan
                     waktu pengesahan.
                   </p>
                 </section>

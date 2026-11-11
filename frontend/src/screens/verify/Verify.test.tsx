@@ -144,3 +144,22 @@ test("pencarian baru yang gagal tidak menampilkan kandidat lama; kirim ulang nam
 })
 
 afterEach(() => vi.unstubAllEnvs())
+
+test("penanda tangan memuat nama dekan dan rektor dari tabel periode", async () => {
+  await renderApp("/verifikasi/2017051008")
+  await screen.findByRole("heading", { level: 1, name: "Terdaftar" })
+  const signers = screen.getByRole("region", { name: "Penanda tangan" })
+  expect(signers).toHaveTextContent("Dr. Eng. Heri Satria, S.Si., M.Si.")
+  expect(signers).toHaveTextContent("Prof. Dr. Ir. Lusmeilia Afriani")
+  expect(signers).toHaveTextContent("Dekan Fakultas Matematika dan Ilmu Pengetahuan Alam")
+  expect(signers).toHaveTextContent("Nama pejabat diambil dari tabel periode jabatan berdasarkan waktu pengesahan.")
+})
+
+test("tanpa nama dekan tetap menampilkan jabatan penerbit", async () => {
+  const client = createMockClient({ latencyMs: 0 })
+  const real = client.verify.bind(client)
+  vi.spyOn(client, "verify").mockImplementation(async (npm) => ({ ...(await real(npm)), dekanName: null }))
+  await renderApp("/verifikasi/2017051008", { client })
+  await screen.findByRole("heading", { level: 1, name: "Terdaftar" })
+  expect(screen.getByRole("region", { name: "Penanda tangan" })).toHaveTextContent("Dekan Fakultas Matematika dan Ilmu Pengetahuan Alam")
+})
