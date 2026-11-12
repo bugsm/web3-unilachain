@@ -5,7 +5,9 @@
  * Identitas Fabric diturunkan dari peran & fakultas (dekan-fmipa, rektor); admin tidak memegang identitas.
  */
 import { createInterface } from "node:readline/promises"
+import { Writable } from "node:stream"
 import { parseArgs } from "node:util"
+import { loadConfig } from "../src/config.js"
 import { createPool } from "../src/db/pool.js"
 import type { FacultyCode } from "../src/domain/faculty.js"
 import { createAccount, expectedIdentity } from "../src/services/accounts.js"
@@ -22,14 +24,25 @@ const { values } = parseArgs({
   },
 })
 
-const url = process.env.DATABASE_URL
-if (!url) throw new Error("DATABASE_URL wajib diisi")
+const url = loadConfig(process.env).databaseUrl
 if (!values.email || !values.name || !values.role) throw new Error("--email, --name, dan --role wajib diisi")
 
 const role = values.role as Role
 const faculty = (values.faculty?.toUpperCase() ?? null) as FacultyCode | null
-const rl = createInterface({ input: process.stdin, output: process.stdout })
-const password = await rl.question("Kata sandi (min. 12 karakter): ")
+// Ketikan sandi tidak ditampilkan di layar.
+let muted = false
+const out = new Writable({
+  write(chunk, encoding, done) {
+    if (!muted) process.stdout.write(chunk, encoding)
+    done()
+  },
+})
+const rl = createInterface({ input: process.stdin, output: out, terminal: Boolean(process.stdin.isTTY) })
+process.stdout.write("Kata sandi (min. 12 karakter): ")
+muted = true
+const password = await rl.question("")
+muted = false
+process.stdout.write("\n")
 rl.close()
 
 const pool = createPool(url)
