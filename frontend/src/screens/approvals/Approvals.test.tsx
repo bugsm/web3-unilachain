@@ -143,3 +143,24 @@ test("pencabutan tidak bisa disahkan massal; daftar massal menampilkan jenis", a
   expect(within(dialog).getAllByText("Pencatatan").length).toBeGreaterThan(0)
   expect(within(dialog).getByText("Perubahan")).toBeInTheDocument()
 })
+
+test("pengesahan massal mengirim beberapa transaksi bersamaan, bukan berurutan", async () => {
+  const { user, client } = await open("dekan.fmipa@unila.ac.id")
+  const real = client.approveDraft.bind(client)
+  let running = 0
+  let peak = 0
+  vi.spyOn(client, "approveDraft").mockImplementation(async (id) => {
+    running++
+    peak = Math.max(peak, running)
+    await new Promise((r) => setTimeout(r, 20))
+    running--
+    return real(id)
+  })
+  for (const name of ["Aulia Rahmawati", "Bagas Prakoso", "Rizky Maulana"])
+    await user.click(screen.getByRole("checkbox", { name: `Pilih ${name}` }))
+  await user.click(screen.getByRole("button", { name: /Sahkan terpilih/ }))
+  const confirm = await screen.findByRole("dialog", { name: "Sahkan 3 draft?" })
+  await user.click(within(confirm).getByRole("button", { name: /Sahkan 3 draft/ }))
+  await screen.findByRole("dialog", { name: "3 berhasil, 0 gagal" })
+  expect(peak).toBe(3)
+})

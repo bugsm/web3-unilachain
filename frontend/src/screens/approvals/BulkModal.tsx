@@ -6,14 +6,18 @@ import { useApi } from "@/app/ApiProvider"
 import { useUser } from "@/app/session"
 import { Button, Modal, Tag, cx } from "@/components/ui"
 import { DRAFT_TYPE_LABEL } from "@/domain/status"
+import { mapPool } from "./pool"
 import { approve, dataOf, keyOf } from "./queue"
+
+/** Transaksi yang dikirim bersamaan; cukup besar agar banyak transaksi masuk satu blok, cukup kecil agar peer tidak kewalahan. */
+export const BULK_CONCURRENCY = 12
 
 interface Outcome {
   item: QueueItem
   error: string | null
 }
 
-/** Konfirmasi → kirim berurutan (satu transaksi per item) → ringkasan per item. */
+/** Konfirmasi → kirim paralel terbatas (satu transaksi per item) → ringkasan per item. */
 export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: boolean; onClose: (ran: boolean) => void }) {
   const api = useApi()
   const user = useUser()
@@ -25,16 +29,9 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
   async function run() {
     if (lock.current) return
     lock.current = true
-    const out: Outcome[] = []
-    for (let i = 0; i < items.length; i++) {
-      setProgress(i + 1)
-      try {
-        await approve(api, items[i])
-        out.push({ item: items[i], error: null })
-      } catch (e) {
-        out.push({ item: items[i], error: userMessage(e) })
-      }
-    }
+    setProgress(0)
+    const settled = await mapPool(items, BULK_CONCURRENCY, (item) => approve(api, item), setProgress)
+    const out: Outcome[] = settled.map((r, i) => ({ item: items[i], error: r.ok ? null : userMessage(r.error) }))
     lock.current = false
     setProgress(null)
     setResults(out)
