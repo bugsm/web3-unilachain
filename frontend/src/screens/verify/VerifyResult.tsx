@@ -72,7 +72,7 @@ export function VerifyResult() {
   const url = `${window.location.origin}/verifikasi/${npm}`
 
   const hero = (
-    <section className="pt-4 pb-14 lg:pb-20">
+    <section className={cx("pt-4 pb-14 lg:pb-20", !data && "flex flex-1 flex-col")}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
           <Link to="/verifikasi" className="text-white/55 transition-colors hover:text-white">
@@ -101,7 +101,7 @@ export function VerifyResult() {
 
       {result.error !== undefined && !result.loading && (
         isLedgerDown(result.error) ? (
-          <LedgerUnavailable onRetry={result.reload} className="mt-10 max-w-3xl" />
+          <LedgerUnavailable onRetry={result.reload} className="my-auto py-10" />
         ) : (
           <div className="mt-10 max-w-2xl rounded-2xl bg-white p-1 text-ink">
             <LoadError error={result.error} onRetry={result.reload} />
@@ -158,7 +158,7 @@ export function VerifyResult() {
   )
 
   return (
-    <PublicLayout band={<LedgerBand>{hero}</LedgerBand>}>
+    <PublicLayout band={<LedgerBand>{hero}</LedgerBand>} fillBand={!data}>
       {data && (
         <div className="pt-14 pb-20 print:hidden">
           {skpi ? (

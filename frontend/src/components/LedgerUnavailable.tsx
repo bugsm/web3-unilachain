@@ -52,28 +52,39 @@ function BrokenChain({ className }: { className?: string }) {
 /**
  * Keadaan "ledger tidak terjangkau" di latar gelap portal verifikasi (peer mati atau server tidak dapat menghubunginya).
  * Menjelaskan bahwa ini bukan putusan tentang SKPI-nya, dan bahwa status tidak pernah ditebak dari data lama.
+ * Stiker di samping kartu (di bawahnya pada layar sempit) hanya hiasan, jadi alt kosong dan tidak dibacakan.
  */
 export function LedgerUnavailable({ onRetry, className }: { onRetry?: () => void; className?: string }) {
   return (
-    <section role="alert" className={cx("rounded-panel border border-white/10 bg-ink-2/80 p-6 sm:p-8", className)}>
-      <BrokenChain />
-      <h2 className="display mt-8 text-2xl text-white sm:text-title">Ledger belum dapat dihubungi</h2>
-      <p className="mt-3 max-w-[60ch] text-body text-white/65">
-        Server belum bisa menjangkau jaringan blockchain, sehingga status SKPI belum bisa dibaca. Ini bukan berarti SKPI ini tidak sah.
-        Status selalu dibaca langsung dari ledger, tidak pernah ditebak dari data lama.
-      </p>
-      {onRetry && (
-        <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <button
-            type="button"
-            onClick={onRetry}
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-ink transition-[translate,background-color] duration-150 ease-out-ui hover:-translate-y-px hover:bg-white/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:translate-y-0"
-          >
-            <RotateCw size={15} /> Coba lagi
-          </button>
-          <span className="text-label text-white/45">Jika berlanjut, hubungi Biro Akademik dan Kemahasiswaan.</span>
-        </div>
-      )}
-    </section>
+    <div className={cx("grid items-center gap-8 lg:grid-cols-12 lg:gap-6", className)}>
+      <section role="alert" className="rounded-panel border border-white/10 bg-ink-2/80 p-6 sm:p-8 lg:col-span-8">
+        <BrokenChain />
+        <h2 className="display mt-8 text-2xl text-white sm:text-title">Ledger belum dapat dihubungi</h2>
+        <p className="mt-3 max-w-[60ch] text-body text-white/65">
+          Server belum bisa menjangkau jaringan blockchain, sehingga status SKPI belum bisa dibaca. Ini bukan berarti SKPI ini tidak sah.
+          Status selalu dibaca langsung dari ledger, tidak pernah ditebak dari data lama.
+        </p>
+        {onRetry && (
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-ink transition-[translate,background-color] duration-150 ease-out-ui hover:-translate-y-px hover:bg-white/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:translate-y-0"
+            >
+              <RotateCw size={15} /> Coba lagi
+            </button>
+            <span className="text-label text-white/45">Jika berlanjut, hubungi Biro Akademik dan Kemahasiswaan.</span>
+          </div>
+        )}
+      </section>
+      <img
+        src="/error-sticker.jpeg"
+        alt=""
+        width={900}
+        height={1125}
+        decoding="async"
+        className="w-full max-w-[220px] justify-self-end rotate-3 rounded-2xl border-4 border-white shadow-panel sm:max-w-[260px] lg:col-span-4 lg:max-w-[300px] lg:justify-self-center"
+      />
+    </div>
   )
 }

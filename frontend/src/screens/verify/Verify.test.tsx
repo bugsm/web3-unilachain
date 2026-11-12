@@ -136,6 +136,23 @@ describe("ledger tidak terjangkau", () => {
     expect(screen.getByRole("link", { name: /Verifikasi lain/ })).toBeInTheDocument()
   })
 
+  test("stiker ditampilkan di samping kartu, dekoratif (alt kosong) dan dengan ukuran tetap agar tata letak tidak bergeser", async () => {
+    await openDown(503, "UNAVAILABLE")
+    await screen.findByRole("alert")
+    const sticker = document.querySelector<HTMLImageElement>('img[src="/error-sticker.jpeg"]')
+    expect(sticker).not.toBeNull()
+    expect(sticker!.getAttribute("alt")).toBe("")
+    expect(sticker!.getAttribute("width")).toBe("900")
+    expect(sticker!.getAttribute("height")).toBe("1125")
+    expect(screen.getByRole("alert").contains(sticker)).toBe(false)
+  })
+
+  test("pita gelap mengisi sisa layar saat ledger mati, tidak menyisakan area putih kosong", async () => {
+    await openDown(503, "UNAVAILABLE")
+    await screen.findByRole("alert")
+    expect(document.querySelector(".ground-ledger")!.parentElement!.className).toContain("flex-1")
+  })
+
   test("galat selain ledger mati tetap memakai bar galat biasa tanpa ilustrasi", async () => {
     await openDown(429, "RATE_LIMITED")
     const alert = await screen.findByRole("alert")
@@ -152,6 +169,12 @@ describe("ledger tidak terjangkau", () => {
     const alert = await screen.findByRole("alert")
     expect(within(alert).getByRole("heading", { name: "Ledger belum dapat dihubungi" })).toBeInTheDocument()
     expect(within(alert).getByRole("img", { name: /rantai blok terputus/i })).toBeInTheDocument()
+  })
+
+  test("hasil normal tidak memaksa pita gelap mengisi layar (bagian putih di bawahnya tetap tampil)", async () => {
+    await renderApp("/verifikasi/2017051008")
+    await screen.findByRole("heading", { level: 1, name: "Terdaftar" })
+    expect(document.querySelector(".ground-ledger")!.parentElement!.className).not.toContain("flex-1")
   })
 
   test("coba lagi memuat ulang dan pulih saat ledger kembali", async () => {
