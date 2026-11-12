@@ -1,0 +1,6 @@
+# HTTPS otomatis (Let's Encrypt) untuk domain aplikasi; meneruskan ke nginx frontend (yang meneruskan /api ke backend).
+{$APP_DOMAIN} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy frontend:8080
+}

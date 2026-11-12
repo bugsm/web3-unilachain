@@ -1,0 +1,31 @@
+# Tambahan untuk server production (Tencent Cloud):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Caddy memegang port 80/443 dan sertifikat; frontend tidak lagi dipublikasikan langsung.
+services:
+  frontend:
+    ports: !reset []
+
+  backend:
+    environment:
+      # Klien → Caddy → nginx frontend → backend: dua proxy tepercaya.
+      TRUST_PROXY: "2"
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  caddy-data:
+  caddy-config:
