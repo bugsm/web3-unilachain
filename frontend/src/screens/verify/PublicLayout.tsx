@@ -4,7 +4,7 @@ import { PublicNav } from "@/components/PublicNav"
 /** `band`: pita gelap (LedgerBand, sudah memuat navigasi) di atas isi; tanpa itu navigasi terang biasa. */
 export function PublicLayout({ children, band }: { children: ReactNode; band?: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-white">
+    <div className="flex min-h-dvh flex-col bg-white print:block print:min-h-0">
       {band ?? <PublicNav />}
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-5 sm:px-10 lg:px-20 print:max-w-none print:p-0">{children}</main>
       <footer className="border-t border-line pb-[env(safe-area-inset-bottom)] print:hidden">

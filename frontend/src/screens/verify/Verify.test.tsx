@@ -183,6 +183,15 @@ describe("lembar cetak (satu halaman A4)", () => {
     expect(doc).toHaveTextContent("/verifikasi/2017051008")
   })
 
+  test("tinggi lembar mengikuti isi (bukan tepat 297 mm) dan tidak terpotong ke halaman berikutnya", async () => {
+    // Safari iOS memakai kertas & margin sendiri: elemen setinggi persis satu halaman A4 meluber jadi halaman kosong kedua.
+    await renderApp("/verifikasi/2017051008")
+    await screen.findByRole("heading", { level: 1, name: "Terdaftar" })
+    const cls = sheet().className
+    expect(cls).not.toMatch(/(^|\s)h-\[297mm\]/)
+    expect(cls).toContain("break-inside-avoid")
+  })
+
   test("tidak terdaftar: tetap dapat dicetak sebagai bukti hasil pemeriksaan, tanpa tabel data", async () => {
     await renderApp("/verifikasi/2017059999")
     await screen.findByRole("heading", { level: 1, name: "Tidak terdaftar" })

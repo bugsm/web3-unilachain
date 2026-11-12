@@ -209,6 +209,9 @@
 @media print {
   html,
   body {
+    /* Tanpa tinggi minimum layar: dokumen cetak setinggi isinya saja (mencegah halaman kosong di Safari iOS). */
+    height: auto !important;
+    min-height: 0 !important;
     background: #ffffff !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
