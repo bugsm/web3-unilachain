@@ -1,0 +1,59 @@
+# Aplikasi SKPI off-chain: frontend (nginx) + backend + PostgreSQL. Nilai lingkungan dari .env (salin .env.example).
+# Jaringan Fabric berada di luar compose ini (VM unila-chain); nama peer dipetakan lewat extra_hosts karena
+# kontainer tidak membaca file hosts milik host.
+name: skpi
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    volumes:
+      - skpi-pg:/var/lib/postgresql/data
+      - ./backend/db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ADMIN_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${APP_DB_USER}:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      FABRIC_CHANNEL: ${FABRIC_CHANNEL:-skpi-channel}
+      FABRIC_CHAINCODE: ${FABRIC_CHAINCODE:-skpi}
+      FABRIC_MSP_ID: ${FABRIC_MSP_ID:-UnilaMSP}
+      FABRIC_PEER_ENDPOINT: peer1.${FABRIC_DOMAIN}:7051
+      FABRIC_PEER_HOST_ALIAS: peer1.${FABRIC_DOMAIN}
+      FABRIC_TLS_CA_PATH: /wallet/tls-ca.pem
+      FABRIC_WALLET_DIR: /wallet
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    extra_hosts:
+      - "peer1.${FABRIC_DOMAIN}:${PEER1_IP}"
+      - "peer2.${FABRIC_DOMAIN}:${PEER2_IP}"
+    volumes:
+      - ./wallet:/wallet:ro
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:3000
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8080}:8080"
+
+volumes:
+  skpi-pg:

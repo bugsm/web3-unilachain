@@ -12,7 +12,7 @@ scripts/      skrip bantu, mis. mengambil sertifikat dari VM-1 ke wallet/
 results/      blackbox.md, caliper/run-1..3/
 ```
 
-## Cara menjalankan (rencana)
+## Cara menjalankan
 
 Backend dan frontend dijalankan sebagai **kontainer Docker** agar image yang sama dipakai di laptop riset
 dan di server production. Semua nilai yang berbeda antar-lingkungan (domain Fabric, alamat peer, port,
@@ -25,6 +25,35 @@ Prasyarat di server aplikasi (laptop riset: Windows + Docker Desktop):
    Windows, jadi compose aplikasi juga memakai `extra_hosts`.
 2. Folder `wallet/` berisi CA TLS UnilaMSP, sertifikat + kunci akun dekan (8 fakultas), rektor, dan `app-reader` yang disalin dari VM-1.
    Folder ini tidak masuk Git.
+
+```bash
+cp .env.example .env                          # isi sandi DB, JWT_SECRET, FABRIC_DOMAIN, PEER1_IP, PEER2_IP
+scripts/fetch-wallet.sh skpi@192.168.56.11    # salin identitas dari VM-1 ke wallet/ (via scp)
+docker compose up -d --build                  # postgres + backend + frontend; migrasi jalan otomatis
+docker compose exec backend node dist/scripts/user-create.js   --email dekan.fmipa@unila.ac.id --name "Dekan FMIPA" --role dekan --faculty FMIPA   # sandi diminta lewat stdin
+```
+
+Aplikasi di `http://127.0.0.1:8080` (`HTTP_BIND`/`HTTP_PORT`). Untuk production, letakkan reverse proxy HTTPS di depannya
+dan biarkan `COOKIE_SECURE=true`. Peran akun: `admin` (wajib `--faculty`), `dekan` (wajib `--faculty`), `rektor`; identitas
+Fabric diturunkan otomatis (`dekan-<fakultas>`, `rektor`).
+
+## Backend
+
+Express 5 + `@hyperledger/fabric-gateway` + PostgreSQL 16, TypeScript. Desain: `docs/superpowers/specs/2026-11-12-backend-s4-design.md`.
+
+```bash
+cd backend
+npm ci
+docker compose -f docker-compose.test.yml up -d   # Postgres khusus test (port 55432)
+npm test                # unit + uji kontrak (klien HTTP frontend asli vs backend, ledger tiruan)
+npm run test:db         # repositori SQL
+npm run test:fabric     # asap ke jaringan riset nyata (VM menyala, variabel FABRIC_* terisi), hanya baca
+```
+
+- Ledger sumber kebenaran: draft baru `DISETUJUI` setelah transaksi ter-commit. Bila status commit belum pasti, draft dikunci
+  dan rekonsiliasi (tiap `RECONCILE_INTERVAL_MS`) memastikannya lewat ledger.
+- Verifikasi publik selalu dibaca dari ledger (`VerifikasiSKPI`, identitas `app-reader`), tidak pernah dari salinan.
+- Daftar dan pencarian nama memakai proyeksi aset di PostgreSQL yang diperbarui dari hasil transaksi.
 
 ## Frontend
 
