@@ -109,10 +109,60 @@ test("429 dan 503 ditampilkan ramah, coba lagi memanggil ulang", async () => {
   const { user } = await renderApp("/verifikasi/2017051008", { client })
   expect(await screen.findByRole("alert")).toHaveTextContent("Terlalu banyak permintaan, coba lagi dalam beberapa saat.")
   await user.click(screen.getByRole("button", { name: "Coba lagi" }))
-  expect(await screen.findByText("Layanan ledger sedang tidak terjangkau.")).toBeInTheDocument()
+  expect(await screen.findByRole("heading", { name: "Ledger belum dapat dihubungi" })).toBeInTheDocument()
   await user.click(screen.getByRole("button", { name: "Coba lagi" }))
   expect(await screen.findByRole("heading", { level: 1, name: "Terdaftar" })).toBeInTheDocument()
   expect(spy).toHaveBeenCalledTimes(3)
+})
+
+describe("ledger tidak terjangkau", () => {
+  async function openDown(status: number, code: string) {
+    const client = createMockClient({ latencyMs: 0 })
+    vi.spyOn(client, "verify").mockRejectedValue(new ApiError(status, code, "down"))
+    return renderApp("/verifikasi/2017051008", { client })
+  }
+
+  test.each([
+    [503, "UNAVAILABLE"],
+    [502, "UNAVAILABLE"],
+    [0, "NETWORK"],
+  ])("galat %i menampilkan ilustrasi rantai terputus, penjelasan, dan pemulihan", async (status, code) => {
+    await openDown(status, code)
+    const alert = await screen.findByRole("alert")
+    expect(within(alert).getByRole("heading", { name: "Ledger belum dapat dihubungi" })).toBeInTheDocument()
+    expect(within(alert).getByRole("img", { name: /rantai blok terputus/i })).toBeInTheDocument()
+    expect(alert).toHaveTextContent("bukan berarti SKPI ini tidak sah")
+    expect(within(alert).getByRole("button", { name: "Coba lagi" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Verifikasi lain/ })).toBeInTheDocument()
+  })
+
+  test("galat selain ledger mati tetap memakai bar galat biasa tanpa ilustrasi", async () => {
+    await openDown(429, "RATE_LIMITED")
+    const alert = await screen.findByRole("alert")
+    expect(alert).toHaveTextContent("Terlalu banyak permintaan")
+    expect(within(alert).queryByRole("img")).toBeNull()
+  })
+
+  test("pencarian nama saat ledger mati memakai tampilan yang sama", async () => {
+    const client = createMockClient({ latencyMs: 0 })
+    vi.spyOn(client, "searchPublic").mockRejectedValue(new ApiError(503, "UNAVAILABLE", "down"))
+    const { user } = await renderApp("/verifikasi", { client })
+    await user.type(input(), "nabila")
+    await user.click(submit())
+    const alert = await screen.findByRole("alert")
+    expect(within(alert).getByRole("heading", { name: "Ledger belum dapat dihubungi" })).toBeInTheDocument()
+    expect(within(alert).getByRole("img", { name: /rantai blok terputus/i })).toBeInTheDocument()
+  })
+
+  test("coba lagi memuat ulang dan pulih saat ledger kembali", async () => {
+    const client = createMockClient({ latencyMs: 0 })
+    const real = client.verify.bind(client)
+    vi.spyOn(client, "verify").mockRejectedValueOnce(new ApiError(503, "UNAVAILABLE", "down")).mockImplementation(real)
+    const { user } = await renderApp("/verifikasi/2017051008", { client })
+    await user.click(await screen.findByRole("button", { name: "Coba lagi" }))
+    expect(await screen.findByRole("heading", { level: 1, name: "Terdaftar" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Ledger belum dapat dihubungi" })).toBeNull()
+  })
 })
 
 test("data uji demo tidak tampil di luar mode mock", async () => {

@@ -2,11 +2,13 @@ import { useEffect, useState, type CSSProperties } from "react"
 import { Link, useParams } from "react-router"
 import { ArrowLeft, Ban, CircleCheck, Clock3, Printer, SearchX } from "lucide-react"
 import type { VerifyStatus } from "@/api/types"
+import { isLedgerDown } from "@/api/errors"
 import { useApi } from "@/app/ApiProvider"
 import { useAsync } from "@/app/useAsync"
 import { useChainStatus } from "@/app/useChainStatus"
 import { formatBlock } from "@/components/ChainStatus"
 import { LedgerBand } from "@/components/LedgerHero"
+import { LedgerUnavailable } from "@/components/LedgerUnavailable"
 import { LinkButton, cx } from "@/components/ui"
 import { LoadError } from "@/components/ui/LoadError"
 import { formatDateTime } from "@/domain/format"
@@ -98,9 +100,13 @@ export function VerifyResult() {
       </div>
 
       {result.error !== undefined && !result.loading && (
-        <div className="mt-10 max-w-2xl rounded-2xl bg-white p-1 text-ink">
-          <LoadError error={result.error} onRetry={result.reload} />
-        </div>
+        isLedgerDown(result.error) ? (
+          <LedgerUnavailable onRetry={result.reload} className="mt-10 max-w-3xl" />
+        ) : (
+          <div className="mt-10 max-w-2xl rounded-2xl bg-white p-1 text-ink">
+            <LoadError error={result.error} onRetry={result.reload} />
+          </div>
+        )
       )}
       {result.loading && !data && (
         <p aria-busy="true" className="mt-14 text-body text-white/55">

@@ -27,3 +27,8 @@ export function userMessage(e: unknown): string {
   }
   return "Terjadi kesalahan."
 }
+
+/** Ledger/peer tidak terjangkau: peer mati (502/503) atau server aplikasi sendiri tidak dapat dihubungi (0). */
+export function isLedgerDown(e: unknown): boolean {
+  return e instanceof ApiError && (e.status === 0 || e.status === 502 || e.status === 503)
+}

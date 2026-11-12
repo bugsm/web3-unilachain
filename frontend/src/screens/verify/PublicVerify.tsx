@@ -2,12 +2,14 @@ import { useState, type CSSProperties, type FormEvent } from "react"
 import { useNavigate, useSearchParams } from "react-router"
 import { ArrowRight, Lock } from "lucide-react"
 import type { Tone } from "@/domain/status"
+import { isLedgerDown } from "@/api/errors"
 import { useApi } from "@/app/ApiProvider"
 import { useAsync } from "@/app/useAsync"
 import { Badge, Button, Field, Input } from "@/components/ui"
 import { LoadError } from "@/components/ui/LoadError"
 import { normalizeName, normalizeNpm } from "@/domain/skpi"
 import { HeroSplit, LedgerBand } from "@/components/LedgerHero"
+import { LedgerUnavailable } from "@/components/LedgerUnavailable"
 import { VerifyFlow } from "@/components/SigningFlow"
 import { Candidates } from "./Candidates"
 import { PublicLayout } from "./PublicLayout"
@@ -104,9 +106,13 @@ export function PublicVerify() {
       </form>
 
       {q && search.error !== undefined && (
-        <div className="mt-4 rounded-2xl bg-white p-1 text-ink">
-          <LoadError error={search.error} onRetry={search.reload} />
-        </div>
+        isLedgerDown(search.error) ? (
+          <LedgerUnavailable onRetry={search.reload} className="mt-4" />
+        ) : (
+          <div className="mt-4 rounded-2xl bg-white p-1 text-ink">
+            <LoadError error={search.error} onRetry={search.reload} />
+          </div>
+        )
       )}
       {current && <Candidates q={q} candidates={current.candidates} truncated={current.truncated} />}
     </>
