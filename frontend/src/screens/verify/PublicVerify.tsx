@@ -88,7 +88,7 @@ export function PublicVerify() {
             <Input
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="Contoh: 2017051008 atau Nabila Azzahra"
+              placeholder="NPM atau nama kamu"
               autoComplete="off"
               spellCheck={false}
               className="h-12 rounded-xl px-4 text-body"
