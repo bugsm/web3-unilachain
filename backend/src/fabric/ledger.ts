@@ -25,8 +25,9 @@ export interface Ledger {
  * REJECTED: chaincode/peer menolak (tidak ada yang tertulis).
  * UNAVAILABLE: peer tidak terjangkau sebelum transaksi terkirim (tidak ada yang tertulis).
  * COMMIT_UNKNOWN: sudah terkirim ke orderer, status commit belum diketahui (txId dibawa untuk rekonsiliasi).
+ * ERROR: galat ledger lain (bukan penolakan chaincode); rincian hanya untuk log server.
  */
-export type LedgerErrorKind = "REJECTED" | "UNAVAILABLE" | "COMMIT_UNKNOWN"
+export type LedgerErrorKind = "REJECTED" | "UNAVAILABLE" | "COMMIT_UNKNOWN" | "ERROR"
 
 export class LedgerError extends Error {
   constructor(

@@ -95,4 +95,15 @@ describe("akun dan sesi", () => {
     const { pool } = await buildTestApp()
     expect((await users.findByIdentifier(pool, "rektor@unila.ac.id"))?.passwordHash).to.match(/^\$argon2id\$/)
   })
+
+  it("di belakang dua proxy (TRUST_PROXY=2) batas login dihitung per klien asli, bukan per proxy", async () => {
+    const { app } = await buildTestApp({ config: { ...testConfig, trustProxy: 2, loginRateLimitPerMin: 2 } })
+    const fail = (client: string) =>
+      request(app).post("/api/auth/login").set("X-Forwarded-For", `${client}, 172.17.0.1`).send({ identifier: "x@unila.ac.id", password: "salah-salah" })
+    await fail("203.0.113.5")
+    await fail("203.0.113.5")
+    expect((await fail("203.0.113.5")).status).to.equal(429)
+    expect((await fail("198.51.100.7")).status).to.equal(401)
+  })
 })
+

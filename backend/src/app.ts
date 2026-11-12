@@ -23,7 +23,7 @@ export function createApp(deps: AppDeps) {
   const app = express()
   app.disable("x-powered-by")
   // Satu proxy di depan (nginx kontainer frontend): IP asli untuk rate limit.
-  app.set("trust proxy", 1)
+  app.set("trust proxy", deps.config.trustProxy)
   app.use(express.json({ limit: "1mb" }))
   app.use(cookieParser())
 

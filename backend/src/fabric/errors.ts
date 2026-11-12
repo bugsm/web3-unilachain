@@ -1,4 +1,5 @@
 import { ApiError } from "../http/errors.js"
+import { logger } from "../log.js"
 import { LedgerError } from "./ledger.js"
 
 const sentence = (m: string) => {
@@ -12,7 +13,13 @@ const sentence = (m: string) => {
  */
 export function toApiError(e: unknown): ApiError {
   if (e instanceof ApiError) return e
-  if (!(e instanceof LedgerError)) return new ApiError(502, "LEDGER_ERROR", "Ledger mengembalikan galat.")
+  // Rincian teknis hanya ke log server (spec §5.4); pesan galat tidak memuat kunci atau isi sertifikat.
+  if (!(e instanceof LedgerError)) {
+    logger.error({ err: e }, "galat ledger tak terduga")
+    return new ApiError(502, "LEDGER_ERROR", "Ledger mengembalikan galat.")
+  }
+  logger.warn({ kind: e.kind, message: e.message, txId: e.txId }, "galat ledger")
+  if (e.kind === "ERROR") return new ApiError(502, "LEDGER_ERROR", "Ledger mengembalikan galat.")
   if (e.kind === "UNAVAILABLE") return new ApiError(503, "UNAVAILABLE", "Layanan ledger sedang tidak terjangkau.")
   if (e.kind === "COMMIT_UNKNOWN")
     return new ApiError(503, "COMMIT_UNKNOWN", "Status transaksi belum pasti; sistem akan memeriksanya kembali.")

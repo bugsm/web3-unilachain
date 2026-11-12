@@ -25,7 +25,9 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 60s;
+        # Di atas total batas waktu transaksi backend (endorse 15 s + submit 5 s + commit 60 s), agar klien menerima
+        # jawaban JSON backend (mis. 503 COMMIT_UNKNOWN), bukan 504 HTML dari nginx.
+        proxy_read_timeout 120s;
     }
 
     # Aset ber-hash dari Vite: cache panjang.

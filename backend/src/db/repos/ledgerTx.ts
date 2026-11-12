@@ -21,15 +21,23 @@ export const ledgerTx = {
     )
   },
 
+  /** Tandai COMMITTED hanya bila masih PENDING; false = sudah dicatat pihak lain (jalur normal atau rekonsiliasi). */
+  async claimCommitted(q: Queryable, txId: string): Promise<boolean> {
+    const r = await q.query(`UPDATE ledger_tx SET status = 'COMMITTED', error = NULL, updated_at = now() WHERE tx_id = $1 AND status = 'PENDING'`, [txId])
+    return (r.rowCount ?? 0) > 0
+  },
+
   async finish(q: Queryable, txId: string, status: Exclude<LedgerTxStatus, "PENDING">, error?: string): Promise<void> {
     await q.query(`UPDATE ledger_tx SET status = $2, error = $3, updated_at = now() WHERE tx_id = $1`, [txId, status, error ?? null])
   },
 
-  async pending(q: Queryable): Promise<LedgerTxRow[]> {
+  /** Transaksi PENDING yang dibuat sebelum `before` (yang lebih muda mungkin masih diproses jalur normal). */
+  async pending(q: Queryable, before: string): Promise<LedgerTxRow[]> {
     const r = await q.query<LedgerTxRow>(
       `SELECT tx_id AS "txId", draft_id::text AS "draftId", npm, fn, identity, status, error,
          to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt"
-       FROM ledger_tx WHERE status = 'PENDING' ORDER BY created_at`,
+       FROM ledger_tx WHERE status = 'PENDING' AND created_at < $1 ORDER BY created_at`,
+      [before],
     )
     return r.rows
   },

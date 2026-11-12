@@ -40,6 +40,8 @@ export async function recordCommitted(
   t: { txId: string; fn: HistoryAction; actor: string; npm: string; asset: LedgerAsset; draftId: string | null; note: string | null },
 ) {
   await withTx(ctx.pool, async (q) => {
+    // Klaim dulu: jalur normal dan rekonsiliasi dapat mencatat transaksi yang sama bersamaan; hanya satu yang menang.
+    if (!(await ledgerTx.claimCommitted(q, t.txId))) return
     const before = await assets.get(q, t.npm)
     await assets.upsert(q, t.asset)
     const at = nowIso(ctx)
@@ -53,7 +55,6 @@ export async function recordCommitted(
       note: t.note,
       changes: t.fn === "PerbaruiSKPI" ? diff(before, t.asset) : [],
     })
-    await ledgerTx.finish(q, t.txId, "COMMITTED")
   })
 }
 

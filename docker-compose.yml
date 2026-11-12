@@ -28,9 +28,14 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://${APP_DB_USER}:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # Sandi dikirim terpisah (bukan di URL) sehingga simbol seperti / @ : # aman.
+      DB_HOST: postgres
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${APP_DB_USER}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
       FABRIC_CHANNEL: ${FABRIC_CHANNEL:-skpi-channel}
       FABRIC_CHAINCODE: ${FABRIC_CHAINCODE:-skpi}
       FABRIC_MSP_ID: ${FABRIC_MSP_ID:-UnilaMSP}
@@ -38,6 +43,15 @@ services:
       FABRIC_PEER_HOST_ALIAS: peer1.${FABRIC_DOMAIN}
       FABRIC_TLS_CA_PATH: /wallet/tls-ca.pem
       FABRIC_WALLET_DIR: /wallet
+      FABRIC_READER_IDENTITY: ${FABRIC_READER_IDENTITY:-app-reader}
+      FABRIC_EVALUATE_TIMEOUT_MS: ${FABRIC_EVALUATE_TIMEOUT_MS:-5000}
+      FABRIC_ENDORSE_TIMEOUT_MS: ${FABRIC_ENDORSE_TIMEOUT_MS:-15000}
+      FABRIC_SUBMIT_TIMEOUT_MS: ${FABRIC_SUBMIT_TIMEOUT_MS:-5000}
+      FABRIC_COMMIT_TIMEOUT_MS: ${FABRIC_COMMIT_TIMEOUT_MS:-60000}
+      RECONCILE_INTERVAL_MS: ${RECONCILE_INTERVAL_MS:-15000}
+      RECONCILE_GIVE_UP_MS: ${RECONCILE_GIVE_UP_MS:-600000}
+      VERIFY_RATE_LIMIT_PER_MIN: ${VERIFY_RATE_LIMIT_PER_MIN:-30}
+      LOGIN_RATE_LIMIT_PER_MIN: ${LOGIN_RATE_LIMIT_PER_MIN:-10}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     extra_hosts:
       - "peer1.${FABRIC_DOMAIN}:${PEER1_IP}"

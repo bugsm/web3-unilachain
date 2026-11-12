@@ -29,4 +29,24 @@ describe("config", () => {
   it("rahasia JWT minimal 32 karakter", () => {
     expect(() => loadConfig({ ...base, JWT_SECRET: "pendek" })).to.throw(/JWT_SECRET/)
   })
+
+  it("TRUST_PROXY default 1, dapat berupa jumlah hop", () => {
+    expect(loadConfig(base).trustProxy).to.equal(1)
+    expect(loadConfig({ ...base, TRUST_PROXY: "2" }).trustProxy).to.equal(2)
+  })
+
+  it("URL basis data dirakit dari DB_* dengan sandi bersimbol (base64, @, :, #, %)", () => {
+    const { DATABASE_URL: _u, ...rest } = base
+    const c = loadConfig({ ...rest, DB_HOST: "postgres", DB_PORT: "5432", DB_NAME: "skpi", DB_USER: "skpi_app", DB_PASSWORD: "a/b+c=@d:e#f%g'h" })
+    const url = new URL(c.databaseUrl)
+    expect(url.hostname).to.equal("postgres")
+    expect(decodeURIComponent(url.password)).to.equal("a/b+c=@d:e#f%g'h")
+    expect(url.pathname).to.equal("/skpi")
+  })
+
+  it("tanpa DATABASE_URL maupun DB_* → galat yang menyebut DATABASE_URL", () => {
+    const { DATABASE_URL: _u, ...rest } = base
+    expect(() => loadConfig(rest)).to.throw(/DATABASE_URL/)
+  })
 })
+

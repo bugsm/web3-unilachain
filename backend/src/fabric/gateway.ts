@@ -18,13 +18,20 @@ const STATUS_NAME = Object.fromEntries(Object.entries(StatusCode).map(([k, v]) =
 /** Tahap transaksi saat galat terjadi: menentukan apakah transaksi mungkin sudah tercatat. */
 type Stage = "endorse" | "submit" | "commit"
 
+const CHAINCODE = /chaincode response \d+, |transaction returned with failure: /
+const REMOTE_UNREACHABLE = /code = (Unavailable|DeadlineExceeded|Canceled)|connection refused|connection error|no route to host|i\/o timeout/i
+
 /** Pesan chaincode dari detail galat ("chaincode response 500, <pesan>") atau dari pesan galat itu sendiri. */
 export function chaincodeMessage(e: GatewayError): string {
   const raw = e.details.find((d) => d.message)?.message ?? e.message
   return raw.replace(/^.*?chaincode response \d+, /s, "").replace(/^.*?transaction returned with failure: /s, "").trim()
 }
 
-function classify(e: unknown, stage: Stage = "endorse", txId?: string): LedgerError {
+/**
+ * Klasifikasi galat gateway. Hanya teks yang benar-benar berasal dari chaincode yang diteruskan ke klien (REJECTED);
+ * endorser lain yang tak terjangkau (policy AND kedua peer) menjadi UNAVAILABLE; sisanya ERROR (502, rincian di log).
+ */
+export function classifyGatewayError(e: unknown, stage: Stage = "endorse", txId?: string): LedgerError {
   if (e instanceof LedgerError) return e
   // Menunggu status commit gagal: transaksi sudah di orderer, hasilnya belum diketahui.
   if (stage === "commit") return new LedgerError("COMMIT_UNKNOWN", e instanceof Error ? e.message : String(e), txId)
@@ -36,8 +43,12 @@ function classify(e: unknown, stage: Stage = "endorse", txId?: string): LedgerEr
       : new LedgerError("UNAVAILABLE", (e as Error).message)
   }
   if (e instanceof GatewayError) {
+    const texts = [e.message, ...e.details.map((d) => d.message)]
     if (UNREACHABLE.has(e.code)) return new LedgerError("UNAVAILABLE", e.message)
-    return new LedgerError("REJECTED", chaincodeMessage(e))
+    if (texts.some((t) => CHAINCODE.test(t))) return new LedgerError("REJECTED", chaincodeMessage(e))
+    const all = texts.join(" | ")
+    if (REMOTE_UNREACHABLE.test(all)) return new LedgerError("UNAVAILABLE", all)
+    return new LedgerError("ERROR", all)
   }
   return new LedgerError("UNAVAILABLE", e instanceof Error ? e.message : String(e))
 }
@@ -84,7 +95,7 @@ export async function createFabricLedger(cfg: Config["fabric"]): Promise<Ledger>
     try {
       return await (await network(cfg.readerIdentity)).getContract("qscc").evaluateTransaction(fn, cfg.channel, ...args)
     } catch (e) {
-      throw classify(e)
+      throw classifyGatewayError(e)
     }
   }
 
@@ -102,10 +113,14 @@ export async function createFabricLedger(cfg: Config["fabric"]): Promise<Ledger>
         const commit = await tx.submit()
         stage = "commit"
         const status = await commit.getStatus()
-        if (!status.successful) throw new LedgerError("REJECTED", `Transaksi tidak valid: ${STATUS_NAME[status.code] ?? status.code}`)
+        if (!status.successful) {
+          const name = STATUS_NAME[status.code] ?? String(status.code)
+          // Konflik MVCC dapat diulang pengguna (409); kode validasi lain adalah galat ledger (502, rincian di log).
+          throw new LedgerError(/MVCC|PHANTOM/.test(name) ? "REJECTED" : "ERROR", `Transaksi tidak valid: ${name}`)
+        }
         return { txId, result: decoder.decode(tx.getResult()) }
       } catch (e) {
-        throw classify(e, stage, txId)
+        throw classifyGatewayError(e, stage, txId)
       }
     },
 
@@ -114,7 +129,7 @@ export async function createFabricLedger(cfg: Config["fabric"]): Promise<Ledger>
         const contract = (await network(identity)).getContract(cfg.chaincode)
         return decoder.decode(await contract.evaluateTransaction(fn, ...args))
       } catch (e) {
-        throw classify(e)
+        throw classifyGatewayError(e)
       }
     },
 
@@ -129,7 +144,7 @@ export async function createFabricLedger(cfg: Config["fabric"]): Promise<Ledger>
         return code === peer.TxValidationCode.VALID ? "COMMITTED" : "INVALID"
       } catch (e) {
         // Transaksi tidak ada di ledger (belum/never committed) → belum pasti; peer mati → lempar.
-        if (e instanceof LedgerError && e.kind === "REJECTED") return "UNKNOWN"
+        if (e instanceof LedgerError && (e.kind === "REJECTED" || e.kind === "ERROR")) return "UNKNOWN"
         throw e
       }
     },
