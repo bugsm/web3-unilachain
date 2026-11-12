@@ -98,7 +98,7 @@ async function lockPendingDraft(ctx: Ctx, user: UserRow, id: string, next: "MENU
     if (d.facultyCode !== user.faculty) throw forbidden("Draft bukan dari fakultas Anda.")
     if (d.status === "MENUNGGU_KONFIRMASI") throw conflict(PENDING_TX)
     if (d.status !== "MENUNGGU_DEKAN") throw conflict("Draft tidak sedang menunggu Dekan.")
-    if (next) await drafts.update(q, d.id, { status: next })
+    if (next) await drafts.update(q, d.id, { status: next, at: nowIso(ctx) })
     return d
   })
 }

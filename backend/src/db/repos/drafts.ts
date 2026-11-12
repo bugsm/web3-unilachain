@@ -121,6 +121,16 @@ export const drafts = {
     return r.rows
   },
 
+  /** Draft MENUNGGU_KONFIRMASI tanpa transaksi PENDING yang berumur lebih tua dari `before` (proses mati sebelum kirim). */
+  async orphanedConfirming(q: Queryable, before: string): Promise<DraftRow[]> {
+    const r = await q.query<DraftRow>(
+      `SELECT ${COLS} FROM drafts d WHERE d.status = 'MENUNGGU_KONFIRMASI' AND d.updated_at < $1
+         AND NOT EXISTS (SELECT 1 FROM ledger_tx t WHERE t.draft_id = d.id AND t.status = 'PENDING')`,
+      [before],
+    )
+    return r.rows
+  },
+
   /** Nomor SKPI dipakai draft tertunda NPM lain. */
   async skpiIdTaken(q: Queryable, skpiId: string, exceptNpm: string, exceptDraftId?: string): Promise<boolean> {
     const r = await q.query(

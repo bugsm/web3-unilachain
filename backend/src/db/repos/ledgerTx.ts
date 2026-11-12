@@ -10,6 +10,7 @@ export interface LedgerTxRow {
   identity: string
   status: LedgerTxStatus
   error: string | null
+  createdAt: string
 }
 
 export const ledgerTx = {
@@ -26,7 +27,8 @@ export const ledgerTx = {
 
   async pending(q: Queryable): Promise<LedgerTxRow[]> {
     const r = await q.query<LedgerTxRow>(
-      `SELECT tx_id AS "txId", draft_id::text AS "draftId", npm, fn, identity, status, error
+      `SELECT tx_id AS "txId", draft_id::text AS "draftId", npm, fn, identity, status, error,
+         to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt"
        FROM ledger_tx WHERE status = 'PENDING' ORDER BY created_at`,
     )
     return r.rows

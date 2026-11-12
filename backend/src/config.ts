@@ -22,6 +22,7 @@ const schema = z.object({
   FABRIC_SUBMIT_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   FABRIC_COMMIT_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   RECONCILE_INTERVAL_MS: z.coerce.number().int().positive().default(15000),
+  RECONCILE_GIVE_UP_MS: z.coerce.number().int().positive().default(600000),
   VERIFY_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(30),
   LOGIN_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(10),
 })
@@ -57,6 +58,7 @@ export function loadConfig(env: Record<string, string | undefined>) {
       },
     },
     reconcileIntervalMs: e.RECONCILE_INTERVAL_MS,
+    reconcileGiveUpMs: e.RECONCILE_GIVE_UP_MS,
     verifyRateLimitPerMin: e.VERIFY_RATE_LIMIT_PER_MIN,
     loginRateLimitPerMin: e.LOGIN_RATE_LIMIT_PER_MIN,
   }
