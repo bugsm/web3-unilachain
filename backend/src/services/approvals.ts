@@ -210,11 +210,13 @@ type Slot = { slot: number; p: Prepared }
 async function submitBatchTx(ctx: Ctx, user: UserRow, batchFn: "SahkanDekanBatch" | "SahkanRektorBatch", items: Slot[]): Promise<Array<[number, BatchOutcome]>> {
   const identity = user.fabricIdentity!
   const out: Array<[number, BatchOutcome]> = []
+  // Galat satu transaksi dipetakan (dan dicatat ke log) sekali, lalu dipakai untuk semua butirnya.
   const failAll = async (rest: Slot[], e: unknown, txId: string | null) => {
     if (txId) await ledgerTx.finish(ctx.pool, txId, "FAILED", e instanceof Error ? e.message : String(e))
+    const o = failure("", e)
     for (const { slot, p } of rest) {
       await p.release()
-      out.push([slot, failure(p.key, e)])
+      out.push([slot, { ...o, key: p.key }])
     }
   }
 
@@ -243,7 +245,8 @@ async function submitBatchTx(ctx: Ctx, user: UserRow, batchFn: "SahkanDekanBatch
     } catch (e) {
       // Status commit belum pasti: seluruh batch tetap menunggu (baris ledger_tx PENDING, draft MENUNGGU_KONFIRMASI) untuk rekonsiliasi.
       if (e instanceof LedgerError && e.kind === "COMMIT_UNKNOWN") {
-        for (const { slot, p } of sending) out.push([slot, failure(p.key, e)])
+        const o = failure("", e)
+        for (const { slot, p } of sending) out.push([slot, { ...o, key: p.key }])
         return out
       }
       const bad = rejectedItems(e)

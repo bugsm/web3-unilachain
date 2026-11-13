@@ -19,6 +19,8 @@ import type { Ctx } from "./context.js"
 
 /** Batas umur draft MENUNGGU_KONFIRMASI tanpa transaksi tercatat (jauh di atas batas waktu endorse). */
 const ORPHAN_MS = 2 * 60_000
+/** Baris yang diselesaikan bersamaan; tiap baris memakai satu koneksi DB sebentar (pool 10). */
+const CONCURRENCY = 8
 /** Toleransi selisih timestamp transaksi (dibuat klien sebelum endorse) terhadap created_at ledger_tx. */
 const SKEW_MS = 5 * 60_000
 
@@ -85,9 +87,11 @@ async function commit(ctx: Ctx, tx: LedgerTxRow, asset: LedgerAsset) {
   })
 }
 
-/** Selesaikan satu transaksi; kembalikan kategori hasil. Peer tak terjangkau → "unknown" (dicoba lagi nanti). */
-async function settle(ctx: Ctx, tx: LedgerTxRow, now: number): Promise<keyof Omit<ReconcileResult, "released">> {
-  const status = await ctx.ledger.txStatus(tx.txId)
+type TxStatus = Awaited<ReturnType<Ctx["ledger"]["txStatus"]>>
+
+/** Selesaikan satu baris (satu SKPI); kembalikan kategori hasil. Peer tak terjangkau → "unknown" (dicoba lagi nanti). */
+async function settle(ctx: Ctx, tx: LedgerTxRow, now: number, statusOf: (txId: string) => Promise<TxStatus>): Promise<keyof Omit<ReconcileResult, "released">> {
+  const status = await statusOf(tx.txId)
   if (status === "COMMITTED") {
     const asset = await readAsset(ctx, tx)
     if (!asset) throw new Error(`transaksi ${tx.txId} ter-commit tetapi aset ${tx.npm} tidak ditemukan`)
@@ -116,15 +120,32 @@ export async function reconcileOnce(ctx: Ctx): Promise<ReconcileResult> {
   // Lebih muda dari total batas waktu jalur normal (+30 s): mungkin masih ditunggu permintaan HTTP-nya.
   const inFlight = t.endorseMs + t.submitMs + t.commitMs + 30_000
 
-  for (const tx of await ledgerTx.pending(ctx.pool, new Date(now - inFlight).toISOString())) {
-    try {
-      out[await settle(ctx, tx, now)]++
-    } catch (err) {
-      // Satu baris gagal (peer putus-sambung, aset belum terbaca) tidak menghentikan baris lain.
-      if (!(err instanceof LedgerError && err.kind === "UNAVAILABLE")) logger.error({ err, txId: tx.txId }, "rekonsiliasi transaksi gagal")
-      out.unknown++
+  // Transaksi batch mencakup banyak SKPI (satu baris per SKPI): status transaksinya cukup dibaca sekali per putaran.
+  const statuses = new Map<string, Promise<TxStatus>>()
+  const statusOf = (txId: string) => {
+    let p = statuses.get(txId)
+    if (!p) {
+      p = ctx.ledger.txStatus(txId)
+      statuses.set(txId, p)
     }
+    return p
   }
+  const rows = await ledgerTx.pending(ctx.pool, new Date(now - inFlight).toISOString())
+  let next = 0
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, rows.length) }, async () => {
+      while (next < rows.length) {
+        const tx = rows[next++]
+        try {
+          out[await settle(ctx, tx, now, statusOf)]++
+        } catch (err) {
+          // Satu baris gagal (peer putus-sambung, aset belum terbaca) tidak menghentikan baris lain.
+          if (!(err instanceof LedgerError && err.kind === "UNAVAILABLE")) logger.error({ err, txId: tx.txId, npm: tx.npm }, "rekonsiliasi transaksi gagal")
+          out.unknown++
+        }
+      }
+    }),
+  )
 
   for (const d of await drafts.orphanedConfirming(ctx.pool, new Date(now - ORPHAN_MS).toISOString())) {
     await drafts.update(ctx.pool, d.id, { status: "MENUNGGU_DEKAN" })

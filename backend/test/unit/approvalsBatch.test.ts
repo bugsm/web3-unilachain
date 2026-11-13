@@ -1,4 +1,5 @@
 import { expect } from "chai"
+import sinon from "sinon"
 import type { SkpiInput } from "../../src/domain/skpi.js"
 import { reconcileOnce } from "../../src/services/reconcile.js"
 import { testConfig } from "../helpers/app.js"
@@ -281,6 +282,19 @@ describe("pengesahan massal: banyak SKPI dalam satu blok", () => {
       expect(ev).to.have.length(3)
       expect(ev.every((e) => e.action === "SahkanDekan" && e.tx_id === txId)).to.equal(true)
       expect((await t.pool.query("SELECT count(*)::int AS n FROM ledger_assets WHERE status = 'MENUNGGU_REKTOR'")).rows[0].n).to.equal(3)
+    })
+
+    it("status transaksi dibaca SEKALI per transaksi walau mencakup banyak SKPI (bukan sekali per SKPI)", async () => {
+      const { t, later } = await unknown(true, 12)
+      const status = sinon.spy(t.ledger, "txStatus")
+      expect(await reconcileOnce(later)).to.deep.include({ committed: 12 })
+      expect(status.callCount).to.equal(1)
+    })
+
+    it("peer mati saat membaca status: semua baris transaksi itu tetap menunggu (unknown), tanpa galat", async () => {
+      const { t, later } = await unknown(true, 4)
+      t.ledger.setOnline(false)
+      expect(await reconcileOnce(later)).to.deep.equal({ committed: 0, failed: 0, unknown: 4, released: 0 })
     })
 
     it("ternyata tidak valid: semua baris gagal dan semua draft kembali menunggu Dekan", async () => {
