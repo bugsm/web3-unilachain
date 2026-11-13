@@ -155,8 +155,8 @@ export async function rektorReject(ctx: Ctx, user: UserRow, npm: string, reason:
 
 // --- Pengesahan massal: banyak SKPI dalam satu blok ---
 
-/** Batas item per permintaan; aplikasi mengirim 12 per permintaan (satu blok), batas server memberi kelonggaran. */
-export const MAX_BATCH = 25
+/** Batas item per permintaan = batas satu blok di konfigurasi kanal (BatchSize.MaxMessageCount: 100); aplikasi mengirim sebanyak itu per kelompok. */
+export const MAX_BATCH = 100
 
 export type BatchOutcome =
   | { key: string; ok: true; txId: string }

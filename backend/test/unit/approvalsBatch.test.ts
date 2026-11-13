@@ -56,6 +56,20 @@ describe("pengesahan massal: banyak SKPI dalam satu blok", () => {
       expect(ev.map((e) => e.txId).sort()).to.deep.equal([...okIds].sort())
     })
 
+    it("100 draft (batas satu blok) disahkan bersamaan → SATU blok berisi 100 transaksi", async () => {
+      const t = await setup()
+      const ds = await t.drafts(100)
+      await t.loginAs("dekan.fmipa@unila.ac.id")
+      const before = await t.ledger.chainHeight()
+      const out = await t.client.approveDraftsBatch(ds.map((d) => d.id))
+      expect(out).to.have.length(100)
+      expect(out.every((r) => r.ok)).to.equal(true)
+      expect(t.ledger.blockSizes).to.deep.equal([100])
+      expect(await t.ledger.chainHeight()).to.equal(before + 1)
+      expect((await t.pool.query("SELECT count(*)::int AS n FROM drafts WHERE status = 'DISETUJUI'")).rows[0].n).to.equal(100)
+      expect((await t.txRows()).filter((r) => r.status === "COMMITTED")).to.have.length(100)
+    }).timeout(60000)
+
     it("item bermasalah (draft tidak ada, fakultas lain, sudah disahkan) hanya gagal sendiri dan tidak dikirim ke ledger", async () => {
       const t = await setup()
       const [a, b, c] = await t.drafts(3)
@@ -128,12 +142,12 @@ describe("pengesahan massal: banyak SKPI dalam satu blok", () => {
       expect(await t.txRows()).to.have.length(0)
     })
 
-    it("validasi permintaan: kosong, terlalu banyak, ganda, bukan teks → 400; peran salah → 403; tanpa login → 401", async () => {
+    it("validasi permintaan: kosong, lebih dari 100, ganda, bukan teks → 400; peran salah → 403; tanpa login → 401", async () => {
       const t = await setup()
       const [a] = await t.drafts(1)
       await t.loginAs("dekan.fmipa@unila.ac.id")
       await expectApiError(t.client.approveDraftsBatch([]), 400)
-      await expectApiError(t.client.approveDraftsBatch(Array.from({ length: 26 }, (_, i) => String(i + 1))), 400)
+      await expectApiError(t.client.approveDraftsBatch(Array.from({ length: 101 }, (_, i) => String(i + 1))), 400)
       await expectApiError(t.client.approveDraftsBatch([a.id, a.id]), 400)
       const raw = (body: unknown) => t.fetchImpl(`${t.base}/approvals/dekan/batch`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
       expect((await raw({ ids: [1, 2] })).status).to.equal(400)

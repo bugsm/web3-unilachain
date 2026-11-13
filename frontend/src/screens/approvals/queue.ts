@@ -43,9 +43,10 @@ export const bulkable = (q: QueueItem) => !(q.kind === "draft" && q.draft.type =
 
 /**
  * Ukuran kelompok pengesahan massal: satu permintaan batch = satu blok berisi sebanyak itu metadata SKPI.
+ * 100 = BatchSize.MaxMessageCount kanal (onchain); lebih dari itu pasti terbagi ke blok berikutnya.
  * Objek (bukan konstanta) agar uji dapat memperkecilnya.
  */
-export const bulk = { size: 12 }
+export const bulk = { size: 100 }
 
 export function chunk<T>(items: readonly T[], size: number): T[][] {
   const n = Math.max(1, Math.floor(size))

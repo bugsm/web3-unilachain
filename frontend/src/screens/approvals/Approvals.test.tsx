@@ -160,7 +160,11 @@ async function selectAndRun(user: ReturnType<typeof userEvent.setup>, names: str
 
 describe("pengesahan massal: satu permintaan batch per kelompok (satu blok)", () => {
   afterEach(() => {
-    bulk.size = 12
+    bulk.size = 100
+  })
+
+  test("ukuran kelompok bawaan = batas satu blok (100 transaksi per blok di konfigurasi kanal)", () => {
+    expect(bulk.size).toBe(100)
   })
 
   test("dekan: semua terpilih dikirim dalam SATU permintaan batch, bukan satu permintaan per draft", async () => {
