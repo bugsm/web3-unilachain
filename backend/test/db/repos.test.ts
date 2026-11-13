@@ -1,6 +1,7 @@
 import { expect } from "chai"
 import { assets, type LedgerAsset } from "../../src/db/repos/assets.js"
 import { drafts } from "../../src/db/repos/drafts.js"
+import { ledgerTx } from "../../src/db/repos/ledgerTx.js"
 import { officials } from "../../src/db/repos/officials.js"
 import { users } from "../../src/db/repos/users.js"
 import { resetDb } from "../helpers/db.js"
@@ -47,6 +48,64 @@ describe("repositori PostgreSQL", () => {
     expect(await drafts.skpiIdTaken(db, "007/UN26.17/SKPI/2026", "2017051071")).to.equal(false)
     await drafts.update(db, d.id, { status: "DIGANTIKAN" })
     expect(await drafts.skpiIdTaken(db, "007/UN26.17/SKPI/2026", "2017059999")).to.equal(false)
+  })
+
+  describe("ledger_tx: satu baris per SKPI dalam satu transaksi", () => {
+    const TX = "a".repeat(64)
+    const items = ["2317051001", "2317051002", "2317051003"].map((npm) => ({ npm, draftId: null, fn: "SahkanRektor" }))
+    const FAR = "9999-01-01T00:00:00.000Z"
+
+    it("transaksi batch mencatat satu baris per NPM, semuanya PENDING, dan terlihat sebagai tertunda per NPM", async () => {
+      const db = await resetDb()
+      await ledgerTx.beginMany(db, { txId: TX, identity: "rektor", items })
+      expect((await ledgerTx.pending(db, FAR)).map((r) => r.npm).sort()).to.deep.equal(items.map((i) => i.npm))
+      expect((await ledgerTx.pending(db, FAR)).every((r) => r.txId === TX && r.fn === "SahkanRektor" && r.identity === "rektor")).to.equal(true)
+      for (const i of items) expect(await ledgerTx.pendingForNpm(db, i.npm)).to.equal(true)
+      expect(await ledgerTx.pendingForNpm(db, "2317059999")).to.equal(false)
+    })
+
+    it("klaim COMMITTED dilakukan per (transaksi, NPM): yang kedua kali ditolak, NPM lain tidak terpengaruh", async () => {
+      const db = await resetDb()
+      await ledgerTx.beginMany(db, { txId: TX, identity: "rektor", items })
+      expect(await ledgerTx.claimCommitted(db, TX, "2317051001")).to.equal(true)
+      expect(await ledgerTx.claimCommitted(db, TX, "2317051001")).to.equal(false)
+      expect(await ledgerTx.pendingForNpm(db, "2317051001")).to.equal(false)
+      expect(await ledgerTx.pendingForNpm(db, "2317051002")).to.equal(true)
+    })
+
+    it("finish tanpa NPM menyelesaikan semua baris transaksi; dengan NPM hanya baris itu", async () => {
+      const db = await resetDb()
+      await ledgerTx.beginMany(db, { txId: TX, identity: "rektor", items })
+      await ledgerTx.finish(db, TX, "FAILED", "satu baris", "2317051002")
+      expect((await ledgerTx.pending(db, FAR)).map((r) => r.npm).sort()).to.deep.equal(["2317051001", "2317051003"])
+      await ledgerTx.finish(db, TX, "FAILED", "semua")
+      expect(await ledgerTx.pending(db, FAR)).to.deep.equal([])
+    })
+
+    it("begin tunggal tetap bekerja; pasangan (transaksi, NPM) yang sama tidak boleh ganda", async () => {
+      const db = await resetDb()
+      await ledgerTx.begin(db, { txId: TX, draftId: null, npm: "2317051001", fn: "SahkanRektor", identity: "rektor" })
+      let galat = ""
+      try {
+        await ledgerTx.begin(db, { txId: TX, draftId: null, npm: "2317051001", fn: "SahkanRektor", identity: "rektor" })
+      } catch (e) {
+        galat = (e as Error).message
+      }
+      expect(galat).to.match(/duplicate key|unique/i)
+      await ledgerTx.begin(db, { txId: TX, draftId: null, npm: "2317051002", fn: "SahkanRektor", identity: "rektor" })
+    })
+
+    it("beginMany bersifat atomik: bila satu baris gagal, tidak ada yang tersimpan", async () => {
+      const db = await resetDb()
+      let galat = false
+      try {
+        await ledgerTx.beginMany(db, { txId: TX, identity: "rektor", items: [items[0], items[0]] })
+      } catch {
+        galat = true
+      }
+      expect(galat).to.equal(true)
+      expect(await ledgerTx.pending(db, FAR)).to.deep.equal([])
+    })
   })
 
   it("data awal pejabat berisi 9 jabatan", async () => {

@@ -42,7 +42,7 @@ export async function recordCommitted(
 ) {
   await withTx(ctx.pool, async (q) => {
     // Klaim dulu: jalur normal dan rekonsiliasi dapat mencatat transaksi yang sama bersamaan; hanya satu yang menang.
-    if (!(await ledgerTx.claimCommitted(q, t.txId))) return
+    if (!(await ledgerTx.claimCommitted(q, t.txId, t.npm))) return
     const before = await assets.get(q, t.npm)
     await assets.upsert(q, t.asset)
     const at = nowIso(ctx)
@@ -153,10 +153,16 @@ export async function rektorReject(ctx: Ctx, user: UserRow, npm: string, reason:
   return run(ctx, user, { fn: "TolakRektor", args: [npm, clean], npm, draftId: null, note: clean, release: async () => undefined })
 }
 
-// --- Pengesahan massal: banyak SKPI dalam satu blok ---
+// --- Pengesahan massal: banyak SKPI dalam SATU transaksi ledger ---
+// Chaincode SahkanDekanBatch / SahkanRektorBatch (onchain): satu transaksi memuat 1-100 SKPI, sehingga satu blok berisi sebanyak itu
+// metadata tanpa bergantung pada waktu tiba tiap transaksi di orderer. Atomik di chaincode: butir yang salah menolak seluruh transaksi
+// dan semua galat dilaporkan sekaligus (BATCH_DITOLAK:[...]); di sini butir itu dibuang lalu sisanya dikirim ulang.
 
-/** Batas item per permintaan = batas satu blok di konfigurasi kanal (BatchSize.MaxMessageCount: 100); aplikasi mengirim sebanyak itu per kelompok. */
+/** Batas item per permintaan = batas chaincode = BatchSize.MaxMessageCount kanal. */
 export const MAX_BATCH = 100
+/** Percobaan kirim: setelah penolakan chaincode, butir yang salah dibuang dan sisanya dikirim ulang. */
+const MAX_ATTEMPTS = 3
+const BATCH_REJECTED = "BATCH_DITOLAK:"
 
 export type BatchOutcome =
   | { key: string; ok: true; txId: string }
@@ -164,12 +170,15 @@ export type BatchOutcome =
 
 interface Prepared {
   key: string
+  /** Fungsi tingkat SKPI (SahkanDekan, PerbaruiSKPI, CabutSKPI, SahkanRektor): dicatat di ledger_tx dan peristiwa. */
   fn: HistoryAction
   args: string[]
   npm: string
   draftId: string | null
   note: string | null
   release: () => Promise<void>
+  /** Butir untuk fungsi chaincode batch; kosong = tidak dapat ikut batch dan dikirim sebagai transaksi tunggal. */
+  item?: unknown
 }
 
 function failure(key: string, e: unknown): BatchOutcome {
@@ -184,79 +193,114 @@ function assertKeys(v: unknown, label: string): string[] {
   return v as string[]
 }
 
+/** Butir yang ditolak chaincode ([{butir, pesan}], butir dihitung dari 1), atau null bila ini bukan penolakan batch. */
+function rejectedItems(e: unknown): Array<{ butir: number; pesan: string }> | null {
+  if (!(e instanceof LedgerError) || e.kind !== "REJECTED" || !e.message.startsWith(BATCH_REJECTED)) return null
+  try {
+    const v: unknown = JSON.parse(e.message.slice(BATCH_REJECTED.length))
+    return Array.isArray(v) ? (v as Array<{ butir: number; pesan: string }>) : null
+  } catch {
+    return null
+  }
+}
+
+type Slot = { slot: number; p: Prepared }
+
+/** Kirim butir-butir sebagai satu transaksi batch; hasil per butir. Tidak pernah melempar. */
+async function submitBatchTx(ctx: Ctx, user: UserRow, batchFn: "SahkanDekanBatch" | "SahkanRektorBatch", items: Slot[]): Promise<Array<[number, BatchOutcome]>> {
+  const identity = user.fabricIdentity!
+  const out: Array<[number, BatchOutcome]> = []
+  const failAll = async (rest: Slot[], e: unknown, txId: string | null) => {
+    if (txId) await ledgerTx.finish(ctx.pool, txId, "FAILED", e instanceof Error ? e.message : String(e))
+    for (const { slot, p } of rest) {
+      await p.release()
+      out.push([slot, failure(p.key, e)])
+    }
+  }
+
+  let remaining = items
+  for (let attempt = 1; remaining.length > 0 && attempt <= MAX_ATTEMPTS; attempt++) {
+    const sending = remaining
+    let txId: string | null = null
+    try {
+      const res = await ctx.ledger.submit(identity, batchFn, [JSON.stringify(sending.map(({ p }) => p.item))], async (id) => {
+        txId = id
+        await ledgerTx.beginMany(ctx.pool, { txId: id, identity, items: sending.map(({ p }) => ({ npm: p.npm, draftId: p.draftId, fn: p.fn })) })
+      })
+      const assets = JSON.parse(res.result) as LedgerAsset[]
+      await Promise.all(
+        sending.map(async ({ slot, p }, i) => {
+          // Sudah ter-commit: galat pencatatan tidak boleh mengembalikan draft; baris ledger_tx tetap PENDING sehingga rekonsiliasi mencatatnya.
+          try {
+            await recordCommitted(ctx, { txId: res.txId, fn: p.fn, actor: actorOf(ctx, user), npm: p.npm, asset: assets[i], draftId: p.draftId, note: p.note })
+          } catch (err) {
+            logger.error({ err, txId: res.txId, npm: p.npm }, "pencatatan hasil batch gagal; menunggu rekonsiliasi")
+          }
+          out.push([slot, { key: p.key, ok: true, txId: res.txId }])
+        }),
+      )
+      return out
+    } catch (e) {
+      // Status commit belum pasti: seluruh batch tetap menunggu (baris ledger_tx PENDING, draft MENUNGGU_KONFIRMASI) untuk rekonsiliasi.
+      if (e instanceof LedgerError && e.kind === "COMMIT_UNKNOWN") {
+        for (const { slot, p } of sending) out.push([slot, failure(p.key, e)])
+        return out
+      }
+      const bad = rejectedItems(e)
+      const drop = new Set<number>()
+      for (const { butir, pesan } of bad ?? []) {
+        const r = sending[butir - 1]
+        if (!r || drop.has(butir - 1)) continue
+        drop.add(butir - 1)
+        await r.p.release()
+        out.push([r.slot, failure(r.p.key, new LedgerError("REJECTED", pesan))])
+      }
+      if (drop.size === 0) {
+        // Penolakan tingkat transaksi (peran, konflik MVCC, peer mati, galat ledger): semua butir yang tersisa ikut gagal.
+        await failAll(sending, e, txId)
+        return out
+      }
+      remaining = sending.filter((_, i) => !drop.has(i))
+    }
+  }
+  if (remaining.length > 0) await failAll(remaining, new LedgerError("REJECTED", "MVCC_READ_CONFLICT"), null)
+  return out
+}
+
 /**
- * Kirim banyak transaksi sekaligus. Tiap item disiapkan sendiri (kunci draft / pemeriksaan NPM) sehingga yang bermasalah hanya
- * gagal sendiri; sisanya di-endorse paralel lalu dikirim serentak ke orderer agar masuk blok yang sama (fabric/batch.ts).
- * Aturan pencatatan sama dengan transaksi tunggal (`run`): ter-commit → proyeksi; pasti gagal → draft dikembalikan;
- * status commit belum pasti → ledger_tx PENDING dan draft MENUNGGU_KONFIRMASI untuk rekonsiliasi.
+ * Siapkan tiap item sendiri (kunci draft / pemeriksaan NPM) sehingga yang bermasalah hanya gagal sendiri. Yang lolos dan dapat ikut batch
+ * dikirim sebagai SATU transaksi; sisanya (mis. perubahan dan pencabutan, yang fungsi chaincode-nya tidak punya versi batch) sebagai
+ * transaksi tunggal. Aturan pencatatan sama dengan `run`: ter-commit -> proyeksi; pasti gagal -> draft dikembalikan; belum pasti -> PENDING.
  */
 async function runBatchApproval(
   ctx: Ctx,
   user: UserRow,
+  batchFn: "SahkanDekanBatch" | "SahkanRektorBatch",
   entries: Array<{ key: string; prepare: () => Promise<Prepared> }>,
 ): Promise<BatchOutcome[]> {
-  const identity = user.fabricIdentity!
   const outcomes = new Array<BatchOutcome>(entries.length)
-  const prepared: Array<{ slot: number; p: Prepared }> = []
+  const inBatch: Slot[] = []
+  const alone: Slot[] = []
   for (const [slot, e] of entries.entries()) {
     try {
-      prepared.push({ slot, p: await e.prepare() })
+      const p = await e.prepare()
+      ;(p.item === undefined ? alone : inBatch).push({ slot, p })
     } catch (err) {
       outcomes[slot] = failure(e.key, err)
     }
   }
-  if (prepared.length === 0) return outcomes
-
-  const txIds = new Map<number, string>()
-  let results: Awaited<ReturnType<typeof ctx.ledger.submitBatch>>
-  try {
-    results = await ctx.ledger.submitBatch(
-      identity,
-      prepared.map(({ p }) => ({ fn: p.fn, args: p.args })),
-      async (index, txId) => {
-        txIds.set(index, txId)
-        const { p } = prepared[index]
-        await ledgerTx.begin(ctx.pool, { txId, draftId: p.draftId, npm: p.npm, fn: p.fn, identity })
-      },
-    )
-  } catch (err) {
-    // submitBatch tidak seharusnya melempar; bila terjadi, hasil yang sudah terkirim tidak diketahui.
-    logger.error({ err }, "submitBatch melempar galat")
-    results = prepared.map((_, i) => ({
-      ok: false as const,
-      error: txIds.has(i) ? new LedgerError("COMMIT_UNKNOWN", "submitBatch gagal", txIds.get(i)) : new LedgerError("ERROR", "submitBatch gagal"),
-    }))
-  }
-
-  await Promise.all(
-    prepared.map(async ({ slot, p }, i) => {
-      const r = results[i]
-      if (r.ok) {
-        // Sudah ter-commit: galat pencatatan tidak boleh mengembalikan draft; ledger_tx tetap PENDING sehingga rekonsiliasi mencatatnya.
-        try {
-          await recordCommitted(ctx, {
-            txId: r.txId,
-            fn: p.fn,
-            actor: actorOf(ctx, user),
-            npm: p.npm,
-            asset: JSON.parse(r.result) as LedgerAsset,
-            draftId: p.draftId,
-            note: p.note,
-          })
-        } catch (err) {
-          logger.error({ err, txId: r.txId }, "pencatatan hasil batch gagal; menunggu rekonsiliasi")
-        }
-        outcomes[slot] = { key: p.key, ok: true, txId: r.txId }
-        return
+  await Promise.all([
+    inBatch.length > 0
+      ? submitBatchTx(ctx, user, batchFn, inBatch).then((rs) => rs.forEach(([slot, o]) => (outcomes[slot] = o)))
+      : Promise.resolve(),
+    ...alone.map(async ({ slot, p }) => {
+      try {
+        outcomes[slot] = { key: p.key, ok: true, ...(await run(ctx, user, p)) }
+      } catch (err) {
+        outcomes[slot] = failure(p.key, err)
       }
-      if (!(r.error instanceof LedgerError && r.error.kind === "COMMIT_UNKNOWN")) {
-        const txId = txIds.get(i)
-        if (txId) await ledgerTx.finish(ctx.pool, txId, "FAILED", r.error.message)
-        await p.release()
-      }
-      outcomes[slot] = failure(p.key, r.error)
     }),
-  )
+  ])
   return outcomes
 }
 
@@ -265,11 +309,13 @@ export function approveDraftsBatch(ctx: Ctx, user: UserRow, ids: unknown) {
   return runBatchApproval(
     ctx,
     user,
+    "SahkanDekanBatch",
     list.map((id) => ({
       key: id,
       prepare: async () => {
         const d = await lockPendingDraft(ctx, user, id, "MENUNGGU_KONFIRMASI")
         const { fn, args } = txFor(d)
+        const x = d.data
         return {
           key: id,
           fn,
@@ -280,6 +326,8 @@ export function approveDraftsBatch(ctx: Ctx, user: UserRow, ids: unknown) {
           release: async () => {
             await drafts.update(ctx.pool, d.id, { status: "MENUNGGU_DEKAN" })
           },
+          // Hanya pencatatan baru (SahkanDekan) yang punya fungsi batch.
+          item: d.type === "PENCATATAN" && x ? { npm: d.npm, name: x.name, skpiId: x.skpiId, programStudy: x.programStudy, totalSKP: x.totalSKP } : undefined,
         }
       },
     })),
@@ -291,11 +339,12 @@ export function rektorApproveBatch(ctx: Ctx, user: UserRow, npms: unknown) {
   return runBatchApproval(
     ctx,
     user,
+    "SahkanRektorBatch",
     list.map((npm) => ({
       key: npm,
       prepare: async () => {
         await assertRektorTarget(ctx, npm)
-        return { key: npm, fn: "SahkanRektor" as const, args: [npm], npm, draftId: null, note: null, release: async () => undefined }
+        return { key: npm, fn: "SahkanRektor" as const, args: [npm], npm, draftId: null, note: null, release: async () => undefined, item: npm }
       },
     })),
   )

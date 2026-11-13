@@ -30,7 +30,7 @@ export interface ReconcileResult {
 }
 
 async function release(ctx: Ctx, tx: LedgerTxRow, reason: string) {
-  await ledgerTx.finish(ctx.pool, tx.txId, "FAILED", reason)
+  await ledgerTx.finish(ctx.pool, tx.txId, "FAILED", reason, tx.npm)
   if (tx.draftId) {
     const d = await drafts.get(ctx.pool, tx.draftId)
     if (d?.status === "MENUNGGU_KONFIRMASI") await drafts.update(ctx.pool, d.id, { status: "MENUNGGU_DEKAN" })

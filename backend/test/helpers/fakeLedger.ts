@@ -4,7 +4,7 @@
  */
 import { randomBytes } from "node:crypto"
 import { FACULTIES, facultyOfNpm, issuerLabel } from "../../src/domain/faculty.js"
-import { LedgerError, type BatchItemResult, type Ledger, type LedgerErrorKind } from "../../src/fabric/ledger.js"
+import { LedgerError, type Ledger, type LedgerErrorKind } from "../../src/fabric/ledger.js"
 
 type Asset = Record<string, unknown> & { npm: string; status: string; skpiId: string }
 
@@ -43,9 +43,10 @@ export class FakeLedger implements Ledger {
   private online = true
   private nextFailure: { kind: LedgerErrorKind; applied: boolean } | null = null
   submitCalls = 0
-  /** Jumlah transaksi valid di tiap blok yang dibuat (submit tunggal = 1; submitBatch = satu entri untuk seluruh batch). */
+  /** Jumlah transaksi di tiap blok yang dibuat (setiap submit = satu blok berisi satu transaksi). */
   readonly blockSizes: number[] = []
-  private batchFailures = new Map<number, { applied: boolean }>()
+  /** Jumlah aset (SKPI) yang ditulis di tiap blok: 1 untuk transaksi tunggal, N untuk SahkanDekanBatch/SahkanRektorBatch. */
+  readonly blockAssets: number[] = []
 
   constructor(private readonly now: () => Date = () => new Date()) {}
 
@@ -59,11 +60,6 @@ export class FakeLedger implements Ledger {
     if (opts.message) this.failMessage = opts.message
   }
   private failMessage = "simulasi"
-
-  /** COMMIT_UNKNOWN untuk item ke-`index` pada submitBatch berikutnya. applied: transaksi sebenarnya tercatat di ledger. */
-  failBatchItemWith(index: number, _kind: "COMMIT_UNKNOWN", opts: { applied?: boolean } = {}) {
-    this.batchFailures.set(index, { applied: opts.applied ?? false })
-  }
 
   private assertOnline() {
     if (!this.online) throw new LedgerError("UNAVAILABLE", "14 UNAVAILABLE: No connection established")
@@ -82,65 +78,22 @@ export class FakeLedger implements Ledger {
     await onSubmitting?.(txId)
     if (failure?.kind === "COMMIT_UNKNOWN") {
       if (failure.applied) {
-        this.apply(identity, fn, args, txId)
-        this.blockSizes.push(1)
+        this.commitBlock(identity, fn, args, txId)
         this.txs.set(txId, "COMMITTED")
       } else this.txs.set(txId, "INVALID")
       throw new LedgerError("COMMIT_UNKNOWN", "4 DEADLINE_EXCEEDED: commit status", txId)
     }
-    const result = this.apply(identity, fn, args, txId)
-    this.blockSizes.push(1)
+    const result = this.commitBlock(identity, fn, args, txId)
     this.txs.set(txId, "COMMITTED")
     return { txId, result }
   }
 
-  async submitBatch(identity: string, items: Array<{ fn: string; args: string[] }>, onSubmitting?: (index: number, txId: string) => Promise<void>) {
-    const out = new Array<BatchItemResult>(items.length)
-    if (!this.online) {
-      items.forEach((_, i) => (out[i] = { ok: false, error: new LedgerError("UNAVAILABLE", "14 UNAVAILABLE: No connection established") }))
-      return out
-    }
-    this.submitCalls += items.length
-    // Endorse: tiap item dijalankan terhadap keadaan sebelum batch (seperti endorsement paralel di jaringan nyata).
-    const endorsed: Array<{ i: number; txId: string }> = []
-    for (const [i, it] of items.entries()) {
-      try {
-        this.dryRun(identity, it.fn, it.args)
-        const txId = randomBytes(32).toString("hex")
-        await onSubmitting?.(i, txId)
-        endorsed.push({ i, txId })
-      } catch (e) {
-        out[i] = { ok: false, error: e instanceof LedgerError ? e : new LedgerError("ERROR", e instanceof Error ? e.message : String(e)) }
-      }
-    }
-    // Commit: semua yang lolos endorse masuk SATU blok; konflik antar item dalam blok itu menjadi MVCC.
-    const before = this.height
-    let applied = 0
-    for (const { i, txId } of endorsed) {
-      const planned = this.batchFailures.get(i)
-      try {
-        if (planned) {
-          if (planned.applied) {
-            this.apply(identity, items[i].fn, items[i].args, txId)
-            applied++
-            this.txs.set(txId, "COMMITTED")
-          } else this.txs.set(txId, "INVALID")
-          out[i] = { ok: false, error: new LedgerError("COMMIT_UNKNOWN", "4 DEADLINE_EXCEEDED: commit status", txId) }
-          continue
-        }
-        const result = this.apply(identity, items[i].fn, items[i].args, txId)
-        applied++
-        this.txs.set(txId, "COMMITTED")
-        out[i] = { ok: true, txId, result }
-      } catch {
-        this.txs.set(txId, "INVALID")
-        out[i] = { ok: false, error: new LedgerError("REJECTED", "Transaksi tidak valid: MVCC_READ_CONFLICT", txId) }
-      }
-    }
-    this.height = before + (applied > 0 ? 1 : 0)
-    if (applied > 0) this.blockSizes.push(applied)
-    this.batchFailures.clear()
-    return out
+  /** Terapkan transaksi dan catat bloknya: satu transaksi = satu blok, berisi satu aset atau banyak (fungsi batch). */
+  private commitBlock(identity: string, fn: string, args: string[], txId: string): string {
+    const result = this.apply(identity, fn, args, txId)
+    this.blockSizes.push(1)
+    this.blockAssets.push(fn.endsWith("Batch") ? (JSON.parse(result) as unknown[]).length : 1)
+    return result
   }
 
   async evaluate(identity: string, fn: string, args: string[]) {
@@ -240,8 +193,101 @@ export class FakeLedger implements Ledger {
     }
   }
 
+  /**
+   * Meniru SahkanDekanBatch/SahkanRektorBatch (onchain/chaincode/skpi/lib/skpiContract.js): peran -> masukan semua butir ->
+   * keadaan semua butir -> penulisan; atomik, galat SEMUA butir dilaporkan sekaligus dalam satu pesan BATCH_DITOLAK:[...].
+   */
+  private applyBatch(who: Identity, fn: "SahkanDekanBatch" | "SahkanRektorBatch", json: string | undefined, txId: string): string {
+    const dekan = fn === "SahkanDekanBatch"
+    this.role(who, [dekan ? "dekan" : "rektor"])
+    let list: unknown
+    try {
+      list = JSON.parse(json as string)
+    } catch {
+      throw reject("Batch bukan JSON yang valid")
+    }
+    if (!Array.isArray(list)) throw reject("Batch harus berupa JSON array")
+    if (list.length === 0) throw reject("Batch kosong")
+    if (list.length > 100) throw reject("Maksimal 100 butir per batch")
+
+    const errors: Array<{ butir: number; npm: string; pesan: string }> = []
+    const note = (i: number, x: unknown, e: unknown) => {
+      const npm = typeof x === "string" ? x : typeof (x as { npm?: unknown } | null)?.npm === "string" ? (x as { npm: string }).npm : ""
+      errors.push({ butir: i + 1, npm, pesan: (e as Error).message })
+    }
+    const seenNpm = new Set<string>()
+    const seenId = new Set<string>()
+    type Valid = { i: number; x: unknown; npm: string; d?: ReturnType<FakeLedger["data"]> }
+    const valid: Valid[] = []
+    list.forEach((x, i) => {
+      try {
+        let npm: string
+        let d: Valid["d"]
+        if (dekan) {
+          if (x === null || typeof x !== "object" || Array.isArray(x)) throw reject("Butir harus berupa objek")
+          const b = x as Record<string, unknown>
+          if (typeof b.npm !== "string" || !/^\d{10}$/.test(b.npm)) throw reject("NPM harus 10 digit angka")
+          npm = b.npm
+          this.facultyOf(npm, who)
+          d = this.data(who, [npm, b.name as string, b.skpiId as string, b.programStudy as string, String(b.totalSKP)])
+          if (seenNpm.has(npm)) throw reject(`NPM ${npm} ganda dalam batch`)
+          if (seenId.has(d.skpiId)) throw reject(`Nomor SKPI ${d.skpiId} ganda dalam batch`)
+          seenId.add(d.skpiId)
+        } else {
+          if (typeof x !== "string" || !/^\d{10}$/.test(x)) throw reject("NPM harus 10 digit angka")
+          npm = x
+          if (seenNpm.has(npm)) throw reject(`NPM ${npm} ganda dalam batch`)
+        }
+        seenNpm.add(npm)
+        valid.push({ i, x, npm, d })
+      } catch (e) {
+        note(i, x, e)
+      }
+    })
+    const lapor = () => {
+      if (errors.length > 0) throw reject(`BATCH_DITOLAK:${JSON.stringify(errors)}`)
+    }
+    lapor()
+
+    for (const v of valid) {
+      try {
+        if (dekan) {
+          const old = this.state.get(v.npm)
+          if (old && old.status !== "DICABUT" && old.status !== "DITOLAK_REKTOR") throw reject(`NPM ${v.npm} sudah memiliki SKPI berstatus ${old.status}`)
+          if (this.index.has(v.d!.skpiId)) throw reject(`Nomor SKPI ${v.d!.skpiId} sudah dipakai`)
+        } else {
+          this.status(this.must(v.npm), "MENUNGGU_REKTOR")
+        }
+      } catch (e) {
+        note(v.i, v.x, e)
+      }
+    }
+    lapor()
+
+    const at = this.now().toISOString()
+    const results: Asset[] = valid.map((v) => {
+      let next: Asset
+      if (dekan) {
+        const d = v.d!
+        this.index.set(d.skpiId, v.npm)
+        next = {
+          npm: v.npm, ...d, facultyCode: who.facultyCode!, unitCode: who.unitCode!, issuer: who.issuer!, issuedTimestamp: at, status: "MENUNGGU_REKTOR",
+          dekanId: who.id, rektorId: "", rektorTimestamp: "", updatedTimestamp: "", revocationReason: "",
+        }
+      } else {
+        next = { ...this.must(v.npm), status: "AKTIF", rektorId: who.id, rektorTimestamp: at }
+      }
+      this.state.set(v.npm, next)
+      this.history.set(v.npm, [...(this.history.get(v.npm) ?? []), { txId, timestamp: at, isDelete: false, penandaTangan: who.id, data: next }])
+      return next
+    })
+    this.height++
+    return JSON.stringify(results)
+  }
+
   private apply(identity: string, fn: string, args: string[], txId: string): string {
     const who = identityOf(identity)
+    if (fn === "SahkanDekanBatch" || fn === "SahkanRektorBatch") return this.applyBatch(who, fn, args[0], txId)
     const npm = args[0]
     if (!/^\d{10}$/.test(npm ?? "")) throw reject("NPM harus 10 digit angka")
     const at = this.now().toISOString()

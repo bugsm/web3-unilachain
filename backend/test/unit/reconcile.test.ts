@@ -10,8 +10,8 @@ const { npm: _n, ...data } = input
 async function setup() {
   const c = await startContract()
   const ctx = { config: testConfig, pool: c.pool, ledger: c.ledger, now: () => new Date() }
-  /** Jam setelah batas waktu jalur normal (endorse + submit + commit) lewat. */
-  const later = { ...ctx, now: () => new Date(Date.now() + 2 * 60_000) }
+  /** Jam setelah batas waktu jalur normal (endorse + submit + commit + 30 s = 125 s) lewat. */
+  const later = { ...ctx, now: () => new Date(Date.now() + 3 * 60_000) }
   await c.loginAs("admin.fmipa@unila.ac.id")
   const d = await c.client.createDraft({ type: "PENCATATAN", npm: input.npm, data })
   await c.loginAs("dekan.fmipa@unila.ac.id")

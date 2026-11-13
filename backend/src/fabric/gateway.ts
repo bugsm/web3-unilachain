@@ -9,7 +9,6 @@ import * as grpc from "@grpc/grpc-js"
 import { GatewayError, StatusCode, connect, hash, signers, type Gateway } from "@hyperledger/fabric-gateway"
 import { common, peer } from "@hyperledger/fabric-protos"
 import type { Config } from "../config.js"
-import { runBatch } from "./batch.js"
 import { LedgerError, type Ledger } from "./ledger.js"
 
 const UNREACHABLE = new Set([grpc.status.UNAVAILABLE, grpc.status.DEADLINE_EXCEEDED, grpc.status.CANCELLED])
@@ -125,23 +124,6 @@ export async function createFabricLedger(cfg: Config["fabric"]): Promise<Ledger>
       } catch (e) {
         throw classifyGatewayError(e, stage, txId)
       }
-    },
-
-    async submitBatch(identity, items, onSubmitting) {
-      let contract
-      try {
-        contract = (await network(identity)).getContract(cfg.chaincode)
-      } catch (e) {
-        const error = classifyGatewayError(e)
-        return items.map(() => ({ ok: false as const, error }))
-      }
-      const proposals = items.map((i) => contract.newProposal(i.fn, { arguments: i.args }))
-      return runBatch(proposals, {
-        onSubmitting,
-        classify: classifyGatewayError,
-        invalid: invalidStatusError,
-        decode: (b) => decoder.decode(b),
-      })
     },
 
     async evaluate(identity, fn, args) {

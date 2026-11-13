@@ -1,7 +1,3 @@
-import type { BatchItemResult } from "./batch.js"
-
-export type { BatchItemResult } from "./batch.js"
-
 /**
  * Batas antara layanan dan jaringan Fabric. Implementasi nyata: gateway.ts; test memakai FakeLedger.
  * `identity` = label di wallet (dekan-<fakultas>, rektor, app-reader).
@@ -18,16 +14,6 @@ export interface Ledger {
     args: string[],
     onSubmitting?: (txId: string) => Promise<void>,
   ): Promise<{ txId: string; result: string }>
-  /**
-   * Banyak transaksi sekaligus agar masuk blok yang sama: endorse semua paralel, lalu kirim serentak ke orderer
-   * (lihat batch.ts). Hasil per item, sesuai urutan input; kegagalan satu item tidak menggagalkan yang lain.
-   * `onSubmitting(index, txId)` seperti pada `submit`. Tidak pernah melempar: galat umum (peer mati) menjadi hasil gagal tiap item.
-   */
-  submitBatch(
-    identity: string,
-    items: Array<{ fn: string; args: string[] }>,
-    onSubmitting?: (index: number, txId: string) => Promise<void>,
-  ): Promise<BatchItemResult[]>
   evaluate(identity: string, fn: string, args: string[]): Promise<string>
   /** Tinggi chain (qscc GetChainInfo). */
   chainHeight(): Promise<number>

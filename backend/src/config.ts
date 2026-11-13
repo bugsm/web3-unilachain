@@ -27,7 +27,7 @@ const schema = z.object({
   FABRIC_READER_IDENTITY: z.string().min(1).default("app-reader"),
   FABRIC_EVALUATE_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
   FABRIC_ENDORSE_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
-  FABRIC_SUBMIT_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+  FABRIC_SUBMIT_TIMEOUT_MS: z.coerce.number().int().positive().default(20000),
   FABRIC_COMMIT_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   RECONCILE_INTERVAL_MS: z.coerce.number().int().positive().default(15000),
   RECONCILE_GIVE_UP_MS: z.coerce.number().int().positive().default(600000),
