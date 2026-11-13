@@ -23,6 +23,8 @@ export function userMessage(e: unknown): string {
   if (e instanceof ApiError) {
     // Galat login membawa pesannya sendiri (mis. sandi salah).
     if (e.code === "INVALID_CREDENTIALS") return e.message
+    // Transaksi sudah dikirim tetapi konfirmasinya terlambat: mungkin sudah tercatat, jadi bukan "ledger tidak terjangkau".
+    if (e.code === "COMMIT_UNKNOWN") return "Status transaksi belum pasti; sistem sedang memastikannya di ledger."
     return BY_STATUS[e.status] ?? (e.message || "Terjadi kesalahan.")
   }
   return "Terjadi kesalahan."
@@ -30,5 +32,5 @@ export function userMessage(e: unknown): string {
 
 /** Ledger/peer tidak terjangkau: peer mati (502/503) atau server aplikasi sendiri tidak dapat dihubungi (0). */
 export function isLedgerDown(e: unknown): boolean {
-  return e instanceof ApiError && (e.status === 0 || e.status === 502 || e.status === 503)
+  return e instanceof ApiError && e.code !== "COMMIT_UNKNOWN" && (e.status === 0 || e.status === 502 || e.status === 503)
 }

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react"
-import { Check, PenLine, X } from "lucide-react"
+import { Check, Clock3, PenLine, X } from "lucide-react"
 import { ApiError, userMessage } from "@/api/errors"
 import type { ApprovalOutcome, QueueItem } from "@/api/types"
 import { useApi } from "@/app/ApiProvider"
@@ -11,7 +11,11 @@ import { approveBatch, bulk, chunk, dataOf, keyOf } from "./queue"
 interface Outcome {
   item: QueueItem
   error: string | null
+  /** Terkirim ke ledger tetapi konfirmasinya belum diterima (COMMIT_UNKNOWN); rekonsiliasi akan memastikannya. */
+  pending: boolean
 }
+
+const isPending = (code: string | undefined) => code === "COMMIT_UNKNOWN"
 
 /** Konfirmasi → kirim per kelompok (satu permintaan batch = satu blok) → ringkasan per item. */
 export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: boolean; onClose: (ran: boolean) => void }) {
@@ -31,10 +35,12 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
     for (const group of chunk(items, bulk.size)) {
       let byKey: Map<string, ApprovalOutcome> | null = null
       let failedAll = ""
+      let pendingAll = false
       try {
         byKey = new Map((await approveBatch(api, group)).map((r) => [r.key, r]))
       } catch (e) {
         failedAll = userMessage(e)
+        pendingAll = e instanceof ApiError && isPending(e.code)
       }
       for (const item of group) {
         const r = byKey?.get(keyOf(item))
@@ -42,7 +48,7 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
         if (failedAll) error = failedAll
         else if (!r) error = "Hasil tidak diterima dari server."
         else error = r.ok ? null : userMessage(new ApiError(r.status, r.code, r.message))
-        out.push({ item, error })
+        out.push({ item, error, pending: failedAll ? pendingAll : !!r && !r.ok && isPending(r.code) })
       }
       setProgress(out.length)
     }
@@ -59,16 +65,20 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
   }
 
   const ok = results?.filter((r) => !r.error).length ?? 0
-  const failed = (results?.length ?? 0) - ok
+  const pending = results?.filter((r) => r.error && r.pending).length ?? 0
+  const failed = (results?.length ?? 0) - ok - pending
+  const summary = pending ? `${ok} berhasil, ${pending} menunggu konfirmasi, ${failed} gagal` : `${ok} berhasil, ${failed} gagal`
 
   return (
     <Modal
       open={open}
       onClose={finish}
-      title={results ? `${ok} berhasil, ${failed} gagal` : `Sahkan ${items.length} ${noun}?`}
+      title={results ? summary : `Sahkan ${items.length} ${noun}?`}
       description={
         results
-          ? "Item yang gagal tetap berada di antrean dan dapat ditinjau ulang."
+          ? pending
+            ? "Yang menunggu konfirmasi sudah dikirim ke ledger; statusnya dipastikan otomatis dalam beberapa menit dan tidak perlu dikirim ulang. Item yang gagal tetap berada di antrean."
+            : "Item yang gagal tetap berada di antrean dan dapat ditinjau ulang."
           : `Setiap ${noun} ditandatangani sebagai ${user.actorId} dalam transaksi terpisah.`
       }
       footer={
@@ -94,7 +104,7 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
       }
     >
       <ul className="divide-y divide-line rounded-lg border border-line">
-        {(results ?? items.map((item) => ({ item, error: undefined as string | null | undefined }))).map(({ item, error }) => {
+        {(results ?? items.map((item) => ({ item, error: undefined as string | null | undefined, pending: false }))).map(({ item, error, pending }) => {
           const d = dataOf(item)
           return (
             <li key={keyOf(item)} className="flex items-start justify-between gap-4 px-4 py-2.5 text-sm">
@@ -105,19 +115,19 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
                     <Tag tone={item.draft.type === "PERUBAHAN" ? "pending" : "muted"}>{DRAFT_TYPE_LABEL[item.draft.type]}</Tag>
                   )}
                 </span>
-                {error && <span className="mt-0.5 block text-xs text-bad">{error}</span>}
+                {error && <span className={cx("mt-0.5 block text-xs", pending ? "text-warn" : "text-bad")}>{error}</span>}
               </span>
               <span className="flex shrink-0 items-center gap-2">
                 <span className="font-mono text-xs text-slate-500 tabular-nums">{d.skpiId}</span>
                 {error !== undefined && (
                   <span
-                    aria-label={error ? "Gagal" : "Berhasil"}
+                    aria-label={!error ? "Berhasil" : pending ? "Menunggu konfirmasi" : "Gagal"}
                     className={cx(
                       "grid size-5 place-items-center rounded-full",
-                      error ? "bg-bad-soft text-bad" : "bg-ok-soft text-ok",
+                      !error ? "bg-ok-soft text-ok" : pending ? "bg-warn-soft text-warn" : "bg-bad-soft text-bad",
                     )}
                   >
-                    {error ? <X size={12} strokeWidth={3} /> : <Check size={12} strokeWidth={3} />}
+                    {!error ? <Check size={12} strokeWidth={3} /> : pending ? <Clock3 size={12} strokeWidth={2.5} /> : <X size={12} strokeWidth={3} />}
                   </span>
                 )}
               </span>

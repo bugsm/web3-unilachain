@@ -352,3 +352,33 @@ describe("antrean: jumlah baris per halaman (10, 50, 100, semua)", () => {
     expect(shown()).toBe(10)
   })
 })
+
+describe("pengesahan massal: status belum pasti dibedakan dari gagal", () => {
+  test("item berstatus COMMIT_UNKNOWN ditampilkan sebagai menunggu konfirmasi, bukan gagal", async () => {
+    const { user, client } = await open("dekan.fmipa@unila.ac.id")
+    const real = client.approveDraftsBatch.bind(client)
+    vi.spyOn(client, "approveDraftsBatch").mockImplementation(async (ids) => {
+      const [first, ...rest] = ids
+      const ok = await real([first])
+      return [
+        ...ok,
+        ...rest.map((id) => ({ key: id, ok: false as const, status: 503, code: "COMMIT_UNKNOWN", message: "Status transaksi belum pasti; sistem akan memeriksanya kembali." })),
+      ]
+    })
+    await selectAndRun(user, ["Aulia Rahmawati", "Bagas Prakoso", "Rizky Maulana"], "draft")
+    const result = await screen.findByRole("dialog", { name: "1 berhasil, 2 menunggu konfirmasi, 0 gagal" })
+    expect(within(result).getAllByLabelText("Menunggu konfirmasi")).toHaveLength(2)
+    expect(within(result).getAllByText("Status transaksi belum pasti; sistem sedang memastikannya di ledger.")).toHaveLength(2)
+    expect(within(result).queryByText("Layanan ledger sedang tidak terjangkau.")).toBeNull()
+    expect(result).toHaveTextContent(/dipastikan otomatis/)
+  })
+
+  test("tanpa status belum pasti, judul tetap 'X berhasil, Y gagal'", async () => {
+    const { user, client } = await open("dekan.fmipa@unila.ac.id")
+    vi.spyOn(client, "approveDraftsBatch").mockResolvedValue([
+      { key: "x", ok: false, status: 409, code: "CONFLICT", message: "Nomor SKPI sudah dipakai." },
+    ])
+    await selectAndRun(user, ["Aulia Rahmawati"], "draft")
+    expect(await screen.findByRole("dialog", { name: "0 berhasil, 1 gagal" })).toBeInTheDocument()
+  })
+})
