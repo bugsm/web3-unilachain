@@ -59,7 +59,7 @@ export const FACULTIES: Faculty[] = [
     name: "Fakultas Matematika dan Ilmu Pengetahuan Alam",
     unitCode: "UN26.17",
     npmDigit: "7",
-    programs: ["S1 Ilmu Komputer", "D3 Manajemen Informatika", "S1 Matematika", "S1 Biologi"],
+    programs: ["S1 Ilmu Komputer", "D3 Manajemen Informatika", "S1 Matematika", "S1 Biologi", "S1 Biologi Terapan", "S1 Kimia", "S1 Fisika"],
   },
   {
     code: "FK",

@@ -17,3 +17,15 @@ test("kode unit sesuai pengesah.conf", () => {
   expect(facultyByCode("FK").unitCode).toBe("UN26.18")
   expect(FACULTIES).toHaveLength(8)
 })
+
+test("FMIPA memiliki tujuh program studi, Ilmu Komputer tetap pilihan awal", () => {
+  expect(facultyByCode("FMIPA").programs).toEqual([
+    "S1 Ilmu Komputer",
+    "D3 Manajemen Informatika",
+    "S1 Matematika",
+    "S1 Biologi",
+    "S1 Biologi Terapan",
+    "S1 Kimia",
+    "S1 Fisika",
+  ])
+})

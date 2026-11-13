@@ -1,5 +1,5 @@
 import { expect } from "chai"
-import { facultyOfNpm, issuerLabel } from "../../src/domain/faculty.js"
+import { facultyByCode, facultyOfNpm, issuerLabel } from "../../src/domain/faculty.js"
 import { nameAt, validateSuccession } from "../../src/domain/officials.js"
 import { predicateOf, validateReason, validateSkpi } from "../../src/domain/skpi.js"
 
@@ -41,5 +41,12 @@ describe("domain", () => {
     expect(nameAt(periods, "2026-10-14T17:30:00.000Z")).to.equal("Baru")
     expect(nameAt(periods, "2026-10-14T16:30:00.000Z")).to.equal("Lama")
     expect(validateSuccession(periods, "2026-10-15", "2026-11-12")).to.be.a("string")
+  })
+
+  it("FMIPA memiliki tujuh program studi dan semuanya lolos validasi SKPI", () => {
+    const programs = ["S1 Ilmu Komputer", "D3 Manajemen Informatika", "S1 Matematika", "S1 Biologi", "S1 Biologi Terapan", "S1 Kimia", "S1 Fisika"]
+    expect(facultyByCode("FMIPA").programs).to.deep.equal(programs)
+    for (const programStudy of programs) expect(validateSkpi({ ...form, programStudy }, "FMIPA"), programStudy).to.deep.equal({})
+    expect(validateSkpi({ ...form, programStudy: "S1 Teknik Sipil" }, "FMIPA").programStudy).to.be.a("string")
   })
 })
