@@ -67,6 +67,23 @@ export const ledgerTx = {
     return r.rows
   },
 
+  /** Baris PENDING satu transaksi (semua SKPI di dalamnya), tanpa batas umur. */
+  async pendingForTx(q: Queryable, txId: string): Promise<LedgerTxRow[]> {
+    const r = await q.query<LedgerTxRow>(
+      `SELECT tx_id AS "txId", draft_id::text AS "draftId", npm, fn, identity, status, error,
+         to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS "createdAt"
+       FROM ledger_tx WHERE tx_id = $1 AND status = 'PENDING' ORDER BY npm`,
+      [txId],
+    )
+    return r.rows
+  },
+
+  /** Status tiap SKPI dalam satu transaksi. */
+  async statusByTx(q: Queryable, txId: string): Promise<Map<string, LedgerTxStatus>> {
+    const r = await q.query<{ npm: string; status: LedgerTxStatus }>(`SELECT npm, status FROM ledger_tx WHERE tx_id = $1`, [txId])
+    return new Map(r.rows.map((x) => [x.npm, x.status]))
+  },
+
   /** Ada transaksi rektor/dekan untuk NPM ini yang statusnya belum pasti. */
   async pendingForNpm(q: Queryable, npm: string): Promise<boolean> {
     const r = await q.query(`SELECT 1 FROM ledger_tx WHERE npm = $1 AND status = 'PENDING' LIMIT 1`, [npm])

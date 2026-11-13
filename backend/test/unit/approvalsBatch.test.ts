@@ -128,8 +128,10 @@ describe("pengesahan massal: banyak SKPI dalam satu blok", () => {
       const t = await setup()
       const ds = await t.drafts(3)
       t.ledger.failNextSubmitWith("COMMIT_UNKNOWN", { applied: true })
+      const belumTahu = sinon.stub(t.ledger, "txStatus").resolves("UNKNOWN") // peer belum melihat transaksinya saat diperiksa
       await t.loginAs("dekan.fmipa@unila.ac.id")
       const out = await t.client.approveDraftsBatch(ds.map((d) => d.id))
+      belumTahu.restore()
 
       expect(out.every((r) => !r.ok && r.status === 503 && r.code === "COMMIT_UNKNOWN")).to.equal(true)
       for (const d of ds) expect(await t.status(d.id)).to.equal("MENUNGGU_KONFIRMASI")
@@ -141,6 +143,34 @@ describe("pengesahan massal: banyak SKPI dalam satu blok", () => {
       const again = await t.client.approveDraftsBatch([ds[0].id])
       expect(again[0].ok).to.equal(false)
       if (!again[0].ok) expect(again[0].status).to.equal(409)
+    })
+
+    it("konfirmasi terlambat tetapi transaksi SUDAH ter-commit: server memastikan sendiri dan melaporkan berhasil", async () => {
+      const t = await setup()
+      const ds = await t.drafts(3)
+      t.ledger.failNextSubmitWith("COMMIT_UNKNOWN", { applied: true })
+      await t.loginAs("dekan.fmipa@unila.ac.id")
+      const out = await t.client.approveDraftsBatch(ds.map((d) => d.id))
+
+      expect(out.map((r) => r.ok)).to.deep.equal([true, true, true])
+      const [txId] = [...t.ledger.txs.keys()]
+      expect(out.every((r) => r.ok && r.txId === txId)).to.equal(true)
+      for (const d of ds) expect(await t.status(d.id)).to.equal("DISETUJUI")
+      expect((await t.txRows()).every((r) => r.status === "COMMITTED")).to.equal(true)
+      expect((await t.pool.query("SELECT count(*)::int AS n FROM events WHERE kind = 'ledger' AND tx_id = $1", [txId])).rows[0].n).to.equal(3)
+      expect((await t.pool.query("SELECT count(*)::int AS n FROM ledger_assets WHERE status = 'MENUNGGU_REKTOR'")).rows[0].n).to.equal(3)
+    })
+
+    it("konfirmasi terlambat dan transaksi ternyata TIDAK valid: semua gagal, draft kembali menunggu Dekan", async () => {
+      const t = await setup()
+      const ds = await t.drafts(2)
+      t.ledger.failNextSubmitWith("COMMIT_UNKNOWN", { applied: false })
+      await t.loginAs("dekan.fmipa@unila.ac.id")
+      const out = await t.client.approveDraftsBatch(ds.map((d) => d.id))
+
+      expect(out.every((r) => !r.ok && r.code !== "COMMIT_UNKNOWN")).to.equal(true)
+      for (const d of ds) expect(await t.status(d.id)).to.equal("MENUNGGU_DEKAN")
+      expect((await t.txRows()).every((r) => r.status === "FAILED")).to.equal(true)
     })
 
     it("semua butir ditolak chaincode: semua gagal per item, tidak ada blok, semua draft dikembalikan, tanpa percobaan ulang", async () => {
@@ -265,8 +295,10 @@ describe("pengesahan massal: banyak SKPI dalam satu blok", () => {
       const t = await setup()
       const ds = await t.drafts(count)
       t.ledger.failNextSubmitWith("COMMIT_UNKNOWN", { applied })
+      const belumTahu = sinon.stub(t.ledger, "txStatus").resolves("UNKNOWN")
       await t.loginAs("dekan.fmipa@unila.ac.id")
       await t.client.approveDraftsBatch(ds.map((d) => d.id))
+      belumTahu.restore()
       const ctx = { config: testConfig, pool: t.pool, ledger: t.ledger, now: () => new Date() }
       const later = { ...ctx, now: () => new Date(Date.now() + 3 * 60_000) }
       return { t, ds, ctx, later }

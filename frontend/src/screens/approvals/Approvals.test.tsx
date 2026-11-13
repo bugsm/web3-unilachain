@@ -382,3 +382,60 @@ describe("pengesahan massal: status belum pasti dibedakan dari gagal", () => {
     expect(await screen.findByRole("dialog", { name: "0 berhasil, 1 gagal" })).toBeInTheDocument()
   })
 })
+
+describe("pengesahan massal: status pengiriman ke ledger dan waktunya", () => {
+  afterEach(() => {
+    bulk.size = 100
+  })
+
+  test("selama dikirim: 'Mengirim N SKPI ke ledger' dengan penghitung detik dan nomor kelompok", async () => {
+    const { user, client } = await open("dekan.fmipa@unila.ac.id")
+    const real = client.approveDraftsBatch.bind(client)
+    let lepas: () => void = () => {}
+    const tahan = new Promise<void>((r) => (lepas = r))
+    vi.spyOn(client, "approveDraftsBatch").mockImplementation(async (ids) => {
+      await tahan
+      return real(ids)
+    })
+    await selectAndRun(user, ["Aulia Rahmawati", "Bagas Prakoso", "Rizky Maulana"], "draft")
+    const dialog = screen.getByRole("dialog")
+    const status = await within(dialog).findByRole("status")
+    expect(status).toHaveTextContent("Mengirim 3 SKPI ke ledger")
+    expect(status).toHaveTextContent(/\d+,\d detik/)
+    expect(status).toHaveTextContent("Kelompok 1 dari 1")
+    lepas()
+    await screen.findByRole("dialog", { name: "3 berhasil, 0 gagal" })
+  })
+
+  test("setelah berhasil: total waktu tercatat di ledger dan rincian per kelompok", async () => {
+    bulk.size = 2
+    const { user } = await open("dekan.fmipa@unila.ac.id")
+    await selectAndRun(user, ["Aulia Rahmawati", "Bagas Prakoso", "Rizky Maulana"], "draft")
+    const result = await screen.findByRole("dialog", { name: "3 berhasil, 0 gagal" })
+    expect(result).toHaveTextContent(/3 SKPI tercatat di ledger dalam \d+,\d detik/)
+    const kelompok = within(result).getByRole("list", { name: "Rincian per kelompok" })
+    const baris = within(kelompok).getAllByRole("listitem")
+    expect(baris).toHaveLength(2)
+    expect(baris[0]).toHaveTextContent(/Kelompok 1.*2 SKPI.*\d+,\d detik/)
+    expect(baris[1]).toHaveTextContent(/Kelompok 2.*1 SKPI.*\d+,\d detik/)
+  })
+
+  test("Rektor mendapat tampilan yang sama", async () => {
+    const { user } = await open("rektor@unila.ac.id")
+    await selectAndRun(user, ["Fajar Pratama", "Andi Wijaya"], "SKPI")
+    const result = await screen.findByRole("dialog", { name: "2 berhasil, 0 gagal" })
+    expect(result).toHaveTextContent(/2 SKPI tercatat di ledger dalam \d+,\d detik/)
+  })
+
+  test("yang belum pasti dirangkum sebagai menunggu konfirmasi ledger, bukan tercatat", async () => {
+    const { user, client } = await open("dekan.fmipa@unila.ac.id")
+    vi.spyOn(client, "approveDraftsBatch").mockImplementation(async (ids) =>
+      ids.map((id) => ({ key: id, ok: false as const, status: 503, code: "COMMIT_UNKNOWN", message: "x" })),
+    )
+    await selectAndRun(user, ["Aulia Rahmawati", "Bagas Prakoso"], "draft")
+    const result = await screen.findByRole("dialog", { name: "0 berhasil, 2 menunggu konfirmasi, 0 gagal" })
+    expect(result).toHaveTextContent(/2 SKPI menunggu konfirmasi ledger/)
+    expect(result).not.toHaveTextContent(/tercatat di ledger dalam/)
+  })
+})
+

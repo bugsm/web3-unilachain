@@ -17,6 +17,8 @@ export const testConfig = loadConfig({
   FABRIC_PEER_HOST_ALIAS: "peer1.unila.local",
   FABRIC_TLS_CA_PATH: "/tidak-dipakai",
   FABRIC_WALLET_DIR: "/tidak-dipakai",
+  // Konfirmasi terlambat diperiksa sekali saja di tes (tanpa menunggu).
+  FABRIC_CONFIRM_WAIT_MS: "0",
 })
 
 let passwordHash: string | null = null

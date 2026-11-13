@@ -201,6 +201,10 @@
   .flow-pulse {
     animation: flow-pulse 3.2s cubic-bezier(0.65, 0, 0.35, 1) 600ms 3 both;
   }
+  /* Varian berulang selama menunggu jawaban ledger (pengesahan massal); berhenti saat elemen dilepas. */
+  .flow-pulse-loop {
+    animation: flow-pulse 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite both;
+  }
   .link-flicker {
     animation: link-flicker 1.6s ease-out 400ms 1 both;
   }

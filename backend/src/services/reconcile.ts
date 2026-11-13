@@ -113,6 +113,45 @@ async function settle(ctx: Ctx, tx: LedgerTxRow, now: number, statusOf: (txId: s
   return "failed"
 }
 
+/** Jalankan `fn` untuk tiap item dengan paling banyak CONCURRENCY berjalan bersamaan. */
+async function forEachLimited<T>(items: readonly T[], fn: (item: T) => Promise<void>) {
+  let next = 0
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, items.length) }, async () => {
+      while (next < items.length) await fn(items[next++])
+    }),
+  )
+}
+
+/** Status transaksi dibaca sekali per transaksi (satu transaksi batch = banyak baris). */
+function memoStatus(ctx: Ctx) {
+  const statuses = new Map<string, Promise<TxStatus>>()
+  return (txId: string) => {
+    let p = statuses.get(txId)
+    if (!p) {
+      p = ctx.ledger.txStatus(txId)
+      statuses.set(txId, p)
+    }
+    return p
+  }
+}
+
+/**
+ * Selesaikan seluruh baris satu transaksi sekarang juga (tanpa menunggu umur minimum rekonsiliasi berkala). Dipakai jalur pengesahan
+ * massal setelah status transaksi diketahui pasti (COMMITTED/INVALID) walau konfirmasi commit-nya terlambat.
+ */
+export async function settleTransaction(ctx: Ctx, txId: string): Promise<void> {
+  const statusOf = memoStatus(ctx)
+  const now = ctx.now().getTime()
+  await forEachLimited(await ledgerTx.pendingForTx(ctx.pool, txId), async (tx) => {
+    try {
+      await settle(ctx, tx, now, statusOf)
+    } catch (err) {
+      logger.error({ err, txId: tx.txId, npm: tx.npm }, "penyelesaian transaksi gagal; menunggu rekonsiliasi")
+    }
+  })
+}
+
 export async function reconcileOnce(ctx: Ctx): Promise<ReconcileResult> {
   const out: ReconcileResult = { committed: 0, failed: 0, unknown: 0, released: 0 }
   const now = ctx.now().getTime()
@@ -121,31 +160,16 @@ export async function reconcileOnce(ctx: Ctx): Promise<ReconcileResult> {
   const inFlight = t.endorseMs + t.submitMs + t.commitMs + 30_000
 
   // Transaksi batch mencakup banyak SKPI (satu baris per SKPI): status transaksinya cukup dibaca sekali per putaran.
-  const statuses = new Map<string, Promise<TxStatus>>()
-  const statusOf = (txId: string) => {
-    let p = statuses.get(txId)
-    if (!p) {
-      p = ctx.ledger.txStatus(txId)
-      statuses.set(txId, p)
+  const statusOf = memoStatus(ctx)
+  await forEachLimited(await ledgerTx.pending(ctx.pool, new Date(now - inFlight).toISOString()), async (tx) => {
+    try {
+      out[await settle(ctx, tx, now, statusOf)]++
+    } catch (err) {
+      // Satu baris gagal (peer putus-sambung, aset belum terbaca) tidak menghentikan baris lain.
+      if (!(err instanceof LedgerError && err.kind === "UNAVAILABLE")) logger.error({ err, txId: tx.txId, npm: tx.npm }, "rekonsiliasi transaksi gagal")
+      out.unknown++
     }
-    return p
-  }
-  const rows = await ledgerTx.pending(ctx.pool, new Date(now - inFlight).toISOString())
-  let next = 0
-  await Promise.all(
-    Array.from({ length: Math.min(CONCURRENCY, rows.length) }, async () => {
-      while (next < rows.length) {
-        const tx = rows[next++]
-        try {
-          out[await settle(ctx, tx, now, statusOf)]++
-        } catch (err) {
-          // Satu baris gagal (peer putus-sambung, aset belum terbaca) tidak menghentikan baris lain.
-          if (!(err instanceof LedgerError && err.kind === "UNAVAILABLE")) logger.error({ err, txId: tx.txId, npm: tx.npm }, "rekonsiliasi transaksi gagal")
-          out.unknown++
-        }
-      }
-    }),
-  )
+  })
 
   for (const d of await drafts.orphanedConfirming(ctx.pool, new Date(now - ORPHAN_MS).toISOString())) {
     await drafts.update(ctx.pool, d.id, { status: "MENUNGGU_DEKAN" })

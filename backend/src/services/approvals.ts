@@ -12,6 +12,7 @@ import { toApiError } from "../fabric/errors.js"
 import { LedgerError } from "../fabric/ledger.js"
 import { badRequest, conflict, forbidden, notFound } from "../http/errors.js"
 import { logger } from "../log.js"
+import { settleTransaction } from "./reconcile.js"
 import type { FieldChange, HistoryAction, SkpiData } from "../types.js"
 import { assertReason } from "./drafts.js"
 import { actorOf, nowIso, toDraft, type Ctx } from "./context.js"
@@ -163,6 +164,21 @@ export const MAX_BATCH = 100
 /** Percobaan kirim: setelah penolakan chaincode, butir yang salah dibuang dan sisanya dikirim ulang. */
 const MAX_ATTEMPTS = 3
 const BATCH_REJECTED = "BATCH_DITOLAK:"
+/** Jeda antarpemeriksaan status transaksi saat konfirmasi commit terlambat. */
+const CONFIRM_POLL_MS = 2000
+
+/**
+ * Konfirmasi commit terlambat (orderer lambat menjawab) tidak berarti transaksi gagal: transaksinya sering sudah masuk blok. Periksa status
+ * transaksi di ledger beberapa kali dalam batas `confirmMs`; kembalikan status pertama yang pasti, atau UNKNOWN bila belum juga diketahui.
+ */
+async function confirmLate(ctx: Ctx, txId: string): Promise<"COMMITTED" | "INVALID" | "UNKNOWN"> {
+  const until = Date.now() + ctx.config.fabric.timeouts.confirmMs
+  for (;;) {
+    const s = await ctx.ledger.txStatus(txId).catch(() => "UNKNOWN" as const)
+    if (s !== "UNKNOWN" || Date.now() + CONFIRM_POLL_MS > until) return s
+    await new Promise((r) => setTimeout(r, CONFIRM_POLL_MS))
+  }
+}
 
 export type BatchOutcome =
   | { key: string; ok: true; txId: string }
@@ -243,8 +259,22 @@ async function submitBatchTx(ctx: Ctx, user: UserRow, batchFn: "SahkanDekanBatch
       )
       return out
     } catch (e) {
-      // Status commit belum pasti: seluruh batch tetap menunggu (baris ledger_tx PENDING, draft MENUNGGU_KONFIRMASI) untuk rekonsiliasi.
+      // Status commit belum pasti: periksa sendiri dulu; bila tetap belum pasti, seluruh batch menunggu rekonsiliasi
+      // (baris ledger_tx PENDING, draft MENUNGGU_KONFIRMASI).
       if (e instanceof LedgerError && e.kind === "COMMIT_UNKNOWN") {
+        const known = (txId as string | null) ?? e.txId ?? null
+        const status = known ? await confirmLate(ctx, known) : "UNKNOWN"
+        if (known && status !== "UNKNOWN") {
+          await settleTransaction(ctx, known)
+          const rows = await ledgerTx.statusByTx(ctx.pool, known)
+          const invalid = failure("", new LedgerError("REJECTED", "Transaksi tidak valid menurut ledger"))
+          const pending = failure("", e)
+          for (const { slot, p } of sending) {
+            const st = rows.get(p.npm)
+            out.push([slot, st === "COMMITTED" ? { key: p.key, ok: true, txId: known } : st === "FAILED" ? { ...invalid, key: p.key } : { ...pending, key: p.key }])
+          }
+          return out
+        }
         const o = failure("", e)
         for (const { slot, p } of sending) out.push([slot, { ...o, key: p.key }])
         return out
