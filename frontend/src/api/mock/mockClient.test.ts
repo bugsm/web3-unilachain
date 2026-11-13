@@ -387,3 +387,31 @@ test("ledgerInfo: peer tidak terjangkau → 503", async () => {
   c.setChainOnline(true)
   await expect(c.ledgerInfo()).resolves.toMatchObject({ channel: "skpi-channel" })
 })
+
+describe("pengesahan massal (mock)", () => {
+  test("dekan: hasil per draft sesuai urutan, galat satu item tidak menggagalkan yang lain", async () => {
+    const client = createMockClient({ latencyMs: 0 })
+    await loginAs(client, "dekan.fmipa@unila.ac.id")
+    const drafts = (await client.listQueue()).filter((q) => q.kind === "draft" && q.draft.type === "PENCATATAN")
+    const ids = drafts.map((q) => (q.kind === "draft" ? q.draft.id : ""))
+    const out = await client.approveDraftsBatch([ids[0], "tidak-ada", ids[1]])
+    expect(out.map((r) => r.key)).toEqual([ids[0], "tidak-ada", ids[1]])
+    expect(out.map((r) => r.ok)).toEqual([true, false, true])
+    const bad = out[1]
+    if (!bad.ok) expect(bad).toMatchObject({ status: 404 })
+  })
+
+  test("rektor: disahkan per NPM; NPM yang tidak menunggu Rektor gagal sendiri", async () => {
+    const client = createMockClient({ latencyMs: 0 })
+    await loginAs(client, "rektor@unila.ac.id")
+    const npm = (await client.listQueue()).map((q) => (q.kind === "rektor" ? q.record.npm : ""))[0]
+    const out = await client.rektorApproveBatch([npm, "2317059999"])
+    expect(out.map((r) => r.ok)).toEqual([true, false])
+  })
+
+  test("peran salah ditolak 403 untuk seluruh permintaan", async () => {
+    const client = createMockClient({ latencyMs: 0 })
+    await loginAs(client, "rektor@unila.ac.id")
+    await expectApiError(client.approveDraftsBatch(["x"]), 403)
+  })
+})

@@ -137,6 +137,11 @@ export interface VerifyCandidate {
   facultyCode: FacultyCode
 }
 
+/** Hasil satu item pada pengesahan massal; seluruh kelompok masuk satu blok. `key` = id draft (Dekan) atau NPM (Rektor). */
+export type ApprovalOutcome =
+  | { key: string; ok: true; txId: string }
+  | { key: string; ok: false; status: number; code: string; message: string }
+
 export interface BatchResult {
   created: Draft[]
   errors: { index: number; npm: string; message: string }[]

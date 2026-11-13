@@ -2,7 +2,7 @@ import { facultyOfNpm, issuerLabel, type FacultyCode } from "@/domain/faculty"
 import { normalizeName, normalizeNpm } from "@/domain/skpi"
 import type { ApiClient } from "../client"
 import { ApiError } from "../errors"
-import type { PublicSkpi, Role, SkpiRecord, User, VerifyResult } from "../types"
+import type { ApprovalOutcome, PublicSkpi, Role, SkpiRecord, User, VerifyResult } from "../types"
 import { canEditOffice, wibDate } from "@/domain/officials"
 import * as officials from "./officials"
 import { seedStore } from "./seed"
@@ -78,6 +78,15 @@ export function createMockClient(
     return d
   }
   const toUser = ({ email: _e, ...u }: Account): User => clone(u)
+  /** Jalankan satu item pengesahan massal; galatnya menjadi hasil item, bukan menggagalkan seluruh kelompok. */
+  const settle = (key: string, run: () => { txId: string }): ApprovalOutcome => {
+    try {
+      return { key, ok: true, ...run() }
+    } catch (e) {
+      const err = e instanceof ApiError ? e : new ApiError(500, "ERROR", "Terjadi kesalahan.")
+      return { key, ok: false, status: err.status, code: err.code, message: err.message }
+    }
+  }
 
   return {
     async login({ identifier, password }) {
@@ -198,6 +207,21 @@ export function createMockClient(
       await wait()
       const u = requireUser("rektor")
       return { txId: ops.rektorApprove(store, npm, u.actorId, now()) }
+    },
+    async approveDraftsBatch(ids) {
+      await wait()
+      const u = requireUser("dekan")
+      return ids.map((id) =>
+        settle(id, () => {
+          draftForDekan(u, id)
+          return { txId: ops.approveDraft(store, id, u.actorId, issuerLabel(u.faculty!), now()) }
+        }),
+      )
+    },
+    async rektorApproveBatch(npms) {
+      await wait()
+      const u = requireUser("rektor")
+      return npms.map((npm) => settle(npm, () => ({ txId: ops.rektorApprove(store, npm, u.actorId, now()) })))
     },
     async rektorReject(npm, reason) {
       await wait()

@@ -4,7 +4,7 @@
  */
 import { randomBytes } from "node:crypto"
 import { FACULTIES, facultyOfNpm, issuerLabel } from "../../src/domain/faculty.js"
-import { LedgerError, type Ledger, type LedgerErrorKind } from "../../src/fabric/ledger.js"
+import { LedgerError, type BatchItemResult, type Ledger, type LedgerErrorKind } from "../../src/fabric/ledger.js"
 
 type Asset = Record<string, unknown> & { npm: string; status: string; skpiId: string }
 
@@ -43,6 +43,9 @@ export class FakeLedger implements Ledger {
   private online = true
   private nextFailure: { kind: LedgerErrorKind; applied: boolean } | null = null
   submitCalls = 0
+  /** Jumlah transaksi valid di tiap blok yang dibuat (submit tunggal = 1; submitBatch = satu entri untuk seluruh batch). */
+  readonly blockSizes: number[] = []
+  private batchFailures = new Map<number, { applied: boolean }>()
 
   constructor(private readonly now: () => Date = () => new Date()) {}
 
@@ -56,6 +59,11 @@ export class FakeLedger implements Ledger {
     if (opts.message) this.failMessage = opts.message
   }
   private failMessage = "simulasi"
+
+  /** COMMIT_UNKNOWN untuk item ke-`index` pada submitBatch berikutnya. applied: transaksi sebenarnya tercatat di ledger. */
+  failBatchItemWith(index: number, _kind: "COMMIT_UNKNOWN", opts: { applied?: boolean } = {}) {
+    this.batchFailures.set(index, { applied: opts.applied ?? false })
+  }
 
   private assertOnline() {
     if (!this.online) throw new LedgerError("UNAVAILABLE", "14 UNAVAILABLE: No connection established")
@@ -75,13 +83,64 @@ export class FakeLedger implements Ledger {
     if (failure?.kind === "COMMIT_UNKNOWN") {
       if (failure.applied) {
         this.apply(identity, fn, args, txId)
+        this.blockSizes.push(1)
         this.txs.set(txId, "COMMITTED")
       } else this.txs.set(txId, "INVALID")
       throw new LedgerError("COMMIT_UNKNOWN", "4 DEADLINE_EXCEEDED: commit status", txId)
     }
     const result = this.apply(identity, fn, args, txId)
+    this.blockSizes.push(1)
     this.txs.set(txId, "COMMITTED")
     return { txId, result }
+  }
+
+  async submitBatch(identity: string, items: Array<{ fn: string; args: string[] }>, onSubmitting?: (index: number, txId: string) => Promise<void>) {
+    const out = new Array<BatchItemResult>(items.length)
+    if (!this.online) {
+      items.forEach((_, i) => (out[i] = { ok: false, error: new LedgerError("UNAVAILABLE", "14 UNAVAILABLE: No connection established") }))
+      return out
+    }
+    this.submitCalls += items.length
+    // Endorse: tiap item dijalankan terhadap keadaan sebelum batch (seperti endorsement paralel di jaringan nyata).
+    const endorsed: Array<{ i: number; txId: string }> = []
+    for (const [i, it] of items.entries()) {
+      try {
+        this.dryRun(identity, it.fn, it.args)
+        const txId = randomBytes(32).toString("hex")
+        await onSubmitting?.(i, txId)
+        endorsed.push({ i, txId })
+      } catch (e) {
+        out[i] = { ok: false, error: e instanceof LedgerError ? e : new LedgerError("ERROR", e instanceof Error ? e.message : String(e)) }
+      }
+    }
+    // Commit: semua yang lolos endorse masuk SATU blok; konflik antar item dalam blok itu menjadi MVCC.
+    const before = this.height
+    let applied = 0
+    for (const { i, txId } of endorsed) {
+      const planned = this.batchFailures.get(i)
+      try {
+        if (planned) {
+          if (planned.applied) {
+            this.apply(identity, items[i].fn, items[i].args, txId)
+            applied++
+            this.txs.set(txId, "COMMITTED")
+          } else this.txs.set(txId, "INVALID")
+          out[i] = { ok: false, error: new LedgerError("COMMIT_UNKNOWN", "4 DEADLINE_EXCEEDED: commit status", txId) }
+          continue
+        }
+        const result = this.apply(identity, items[i].fn, items[i].args, txId)
+        applied++
+        this.txs.set(txId, "COMMITTED")
+        out[i] = { ok: true, txId, result }
+      } catch {
+        this.txs.set(txId, "INVALID")
+        out[i] = { ok: false, error: new LedgerError("REJECTED", "Transaksi tidak valid: MVCC_READ_CONFLICT", txId) }
+      }
+    }
+    this.height = before + (applied > 0 ? 1 : 0)
+    if (applied > 0) this.blockSizes.push(applied)
+    this.batchFailures.clear()
+    return out
   }
 
   async evaluate(identity: string, fn: string, args: string[]) {

@@ -32,6 +32,7 @@ const ACCOUNTS: Array<Omit<NewUser, "passwordHash">> = [
 /** Ledger yang menolak semua panggilan; dipakai test yang tidak menyentuh ledger. */
 export const offlineLedger: Ledger = {
   submit: () => Promise.reject(new Error("ledger tidak dipakai di test ini")),
+  submitBatch: () => Promise.reject(new Error("ledger tidak dipakai di test ini")),
   evaluate: () => Promise.reject(new Error("ledger tidak dipakai di test ini")),
   chainHeight: () => Promise.reject(new Error("ledger tidak dipakai di test ini")),
   txStatus: () => Promise.reject(new Error("ledger tidak dipakai di test ini")),

@@ -9,6 +9,7 @@ import * as grpc from "@grpc/grpc-js"
 import { GatewayError, StatusCode, connect, hash, signers, type Gateway } from "@hyperledger/fabric-gateway"
 import { common, peer } from "@hyperledger/fabric-protos"
 import type { Config } from "../config.js"
+import { runBatch } from "./batch.js"
 import { LedgerError, type Ledger } from "./ledger.js"
 
 const UNREACHABLE = new Set([grpc.status.UNAVAILABLE, grpc.status.DEADLINE_EXCEEDED, grpc.status.CANCELLED])
@@ -51,6 +52,12 @@ export function classifyGatewayError(e: unknown, stage: Stage = "endorse", txId?
     return new LedgerError("ERROR", all)
   }
   return new LedgerError("UNAVAILABLE", e instanceof Error ? e.message : String(e))
+}
+
+/** Transaksi ter-commit tetapi tidak valid. Konflik MVCC dapat diulang pengguna (409); kode lain adalah galat ledger (502, rincian di log). */
+function invalidStatusError(code: number): LedgerError {
+  const name = STATUS_NAME[code] ?? String(code)
+  return new LedgerError(/MVCC|PHANTOM/.test(name) ? "REJECTED" : "ERROR", `Transaksi tidak valid: ${name}`)
 }
 
 export async function createFabricLedger(cfg: Config["fabric"]): Promise<Ledger> {
@@ -113,15 +120,28 @@ export async function createFabricLedger(cfg: Config["fabric"]): Promise<Ledger>
         const commit = await tx.submit()
         stage = "commit"
         const status = await commit.getStatus()
-        if (!status.successful) {
-          const name = STATUS_NAME[status.code] ?? String(status.code)
-          // Konflik MVCC dapat diulang pengguna (409); kode validasi lain adalah galat ledger (502, rincian di log).
-          throw new LedgerError(/MVCC|PHANTOM/.test(name) ? "REJECTED" : "ERROR", `Transaksi tidak valid: ${name}`)
-        }
+        if (!status.successful) throw invalidStatusError(status.code)
         return { txId, result: decoder.decode(tx.getResult()) }
       } catch (e) {
         throw classifyGatewayError(e, stage, txId)
       }
+    },
+
+    async submitBatch(identity, items, onSubmitting) {
+      let contract
+      try {
+        contract = (await network(identity)).getContract(cfg.chaincode)
+      } catch (e) {
+        const error = classifyGatewayError(e)
+        return items.map(() => ({ ok: false as const, error }))
+      }
+      const proposals = items.map((i) => contract.newProposal(i.fn, { arguments: i.args }))
+      return runBatch(proposals, {
+        onSubmitting,
+        classify: classifyGatewayError,
+        invalid: invalidStatusError,
+        decode: (b) => decoder.decode(b),
+      })
     },
 
     async evaluate(identity, fn, args) {

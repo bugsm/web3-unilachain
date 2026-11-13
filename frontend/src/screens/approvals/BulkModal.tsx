@@ -1,23 +1,19 @@
 import { useRef, useState } from "react"
 import { Check, PenLine, X } from "lucide-react"
-import { userMessage } from "@/api/errors"
-import type { QueueItem } from "@/api/types"
+import { ApiError, userMessage } from "@/api/errors"
+import type { ApprovalOutcome, QueueItem } from "@/api/types"
 import { useApi } from "@/app/ApiProvider"
 import { useUser } from "@/app/session"
 import { Button, Modal, Tag, cx } from "@/components/ui"
 import { DRAFT_TYPE_LABEL } from "@/domain/status"
-import { mapPool } from "./pool"
-import { approve, dataOf, keyOf } from "./queue"
-
-/** Transaksi yang dikirim bersamaan; cukup besar agar banyak transaksi masuk satu blok, cukup kecil agar peer tidak kewalahan. */
-export const BULK_CONCURRENCY = 12
+import { approveBatch, bulk, chunk, dataOf, keyOf } from "./queue"
 
 interface Outcome {
   item: QueueItem
   error: string | null
 }
 
-/** Konfirmasi → kirim paralel terbatas (satu transaksi per item) → ringkasan per item. */
+/** Konfirmasi → kirim per kelompok (satu permintaan batch = satu blok) → ringkasan per item. */
 export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: boolean; onClose: (ran: boolean) => void }) {
   const api = useApi()
   const user = useUser()
@@ -30,8 +26,26 @@ export function BulkModal({ items, open, onClose }: { items: QueueItem[]; open: 
     if (lock.current) return
     lock.current = true
     setProgress(0)
-    const settled = await mapPool(items, BULK_CONCURRENCY, (item) => approve(api, item), setProgress)
-    const out: Outcome[] = settled.map((r, i) => ({ item: items[i], error: r.ok ? null : userMessage(r.error) }))
+    const out: Outcome[] = []
+    // Kelompok dikirim berurutan; di dalam satu kelompok semua transaksi dikirim serentak oleh server (satu blok).
+    for (const group of chunk(items, bulk.size)) {
+      let byKey: Map<string, ApprovalOutcome> | null = null
+      let failedAll = ""
+      try {
+        byKey = new Map((await approveBatch(api, group)).map((r) => [r.key, r]))
+      } catch (e) {
+        failedAll = userMessage(e)
+      }
+      for (const item of group) {
+        const r = byKey?.get(keyOf(item))
+        let error: string | null
+        if (failedAll) error = failedAll
+        else if (!r) error = "Hasil tidak diterima dari server."
+        else error = r.ok ? null : userMessage(new ApiError(r.status, r.code, r.message))
+        out.push({ item, error })
+      }
+      setProgress(out.length)
+    }
     lock.current = false
     setProgress(null)
     setResults(out)

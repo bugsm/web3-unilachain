@@ -1,5 +1,6 @@
 import type {
   ActivityItem,
+  ApprovalOutcome,
   BatchResult,
   Draft,
   LedgerInfo,
@@ -36,6 +37,9 @@ export interface ApiClient {
   approveDraft(id: string): Promise<{ txId: string }>
   rejectDraft(id: string, reason: string): Promise<Draft>
   rektorApprove(npm: string): Promise<{ txId: string }>
+  /** Sahkan banyak draft sekaligus (maks. 25 per permintaan); satu transaksi per draft, dikirim serentak agar satu blok. */
+  approveDraftsBatch(ids: string[]): Promise<ApprovalOutcome[]>
+  rektorApproveBatch(npms: string[]): Promise<ApprovalOutcome[]>
   rektorReject(npm: string, reason: string): Promise<{ txId: string }>
 
   searchPublic(q: string): Promise<{ candidates: VerifyCandidate[]; truncated: boolean }>

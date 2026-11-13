@@ -69,3 +69,86 @@ describe("FakeLedger meniru chaincode", () => {
     expect(h[1].penandaTangan).to.match(/CN=rektor/)
   })
 })
+
+describe("FakeLedger.submitBatch", () => {
+  const item = (npm: string, skpiId: string) => ({ fn: "SahkanDekan", args: args(npm, skpiId) })
+  const batch = [
+    item("2017051008", "001/UN26.17/SKPI/2026"),
+    item("2017051021", "002/UN26.17/SKPI/2026"),
+    item("2017051033", "003/UN26.17/SKPI/2026"),
+  ]
+
+  it("semua transaksi dalam satu batch masuk SATU blok", async () => {
+    const l = new FakeLedger()
+    const before = await l.chainHeight()
+    const out = await l.submitBatch("dekan-fmipa", batch)
+    expect(out.every((r) => r.ok)).to.equal(true)
+    expect(out.map((r) => (r.ok ? JSON.parse(r.result).npm : null))).to.deep.equal(["2017051008", "2017051021", "2017051033"])
+    expect(await l.chainHeight()).to.equal(before + 1)
+    expect(l.blockSizes).to.deep.equal([3])
+    expect(l.state.size).to.equal(3)
+  })
+
+  it("submit tunggal tetap satu blok per transaksi", async () => {
+    const l = new FakeLedger()
+    await l.submit("dekan-fmipa", "SahkanDekan", args())
+    expect(l.blockSizes).to.deep.equal([1])
+  })
+
+  it("onSubmitting dipanggil per item yang lolos endorse dengan indeks dan txId yang sama dengan hasilnya", async () => {
+    const l = new FakeLedger()
+    const seen: Array<[number, string]> = []
+    const out = await l.submitBatch("dekan-fmipa", batch, async (i, id) => {
+      seen.push([i, id])
+    })
+    expect(seen.map(([i]) => i)).to.deep.equal([0, 1, 2])
+    expect(seen.map(([, id]) => id)).to.deep.equal(out.map((r) => (r.ok ? r.txId : "")))
+  })
+
+  it("item yang ditolak chaincode (endorse) tidak ikut blok dan tidak mengganggu yang lain", async () => {
+    const l = new FakeLedger()
+    const out = await l.submitBatch("dekan-fmipa", [batch[0], item("2015051001", "009/UN26.17/SKPI/2026"), batch[2]])
+    expect(out.map((r) => r.ok)).to.deep.equal([true, false, true])
+    const bad = out[1]
+    if (!bad.ok) expect(bad.error.message).to.match(/^Akses ditolak: NPM 2015051001 bukan mahasiswa fakultas FMIPA/)
+    expect(l.blockSizes).to.deep.equal([2])
+    expect(l.state.has("2015051001")).to.equal(false)
+  })
+
+  it("nomor SKPI ganda di dalam batch yang sama: yang kedua gagal commit (konflik MVCC) di blok yang sama", async () => {
+    const l = new FakeLedger()
+    const out = await l.submitBatch("dekan-fmipa", [item("2017051008", "001/UN26.17/SKPI/2026"), item("2017051021", "001/UN26.17/SKPI/2026")])
+    expect(out.map((r) => r.ok)).to.deep.equal([true, false])
+    const dup = out[1]
+    if (!dup.ok) expect(dup.error).to.include({ kind: "REJECTED" })
+    expect(l.blockSizes).to.deep.equal([1])
+  })
+
+  it("COMMIT_UNKNOWN terjadwal per item: tercatat atau tidak sesuai opsi, txId dibawa untuk rekonsiliasi", async () => {
+    const l = new FakeLedger()
+    l.failBatchItemWith(1, "COMMIT_UNKNOWN", { applied: true })
+    l.failBatchItemWith(2, "COMMIT_UNKNOWN", { applied: false })
+    const out = await l.submitBatch("dekan-fmipa", batch)
+    expect(out[0].ok).to.equal(true)
+    for (const i of [1, 2]) {
+      const r = out[i]
+      expect(r.ok).to.equal(false)
+      if (!r.ok) {
+        expect(r.error.kind).to.equal("COMMIT_UNKNOWN")
+        expect(r.error.txId).to.match(/^[0-9a-f]{64}$/)
+        expect(await l.txStatus(r.error.txId!)).to.equal(i === 1 ? "COMMITTED" : "INVALID")
+      }
+    }
+    expect(l.state.has("2017051021")).to.equal(true)
+    expect(l.state.has("2017051033")).to.equal(false)
+  })
+
+  it("offline: semua item UNAVAILABLE dan tidak ada yang tertulis", async () => {
+    const l = new FakeLedger()
+    l.setOnline(false)
+    const out = await l.submitBatch("dekan-fmipa", batch)
+    expect(out.map((r) => (r.ok ? "ok" : r.error.kind))).to.deep.equal(["UNAVAILABLE", "UNAVAILABLE", "UNAVAILABLE"])
+    expect(l.state.size).to.equal(0)
+  })
+})
+

@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { approveDraft, rejectDraft, rektorApprove, rektorReject } from "../../services/approvals.js"
+import { approveDraft, approveDraftsBatch, rejectDraft, rektorApprove, rektorApproveBatch, rektorReject } from "../../services/approvals.js"
 import type { Ctx } from "../../services/context.js"
 import { requireUser } from "../session.js"
 
@@ -18,6 +18,13 @@ export function approvalRoutes(ctx: Ctx) {
   })
   r.post("/records/:npm/rektor/approve", rektor, async (req, res) => {
     res.json(await rektorApprove(ctx, req.account!, String(req.params.npm)))
+  })
+  // Pengesahan massal: satu respons berisi hasil per item; seluruh kelompok dikirim serentak agar satu blok.
+  r.post("/approvals/dekan/batch", dekan, async (req, res) => {
+    res.json({ results: await approveDraftsBatch(ctx, req.account!, (req.body as { ids?: unknown } | undefined)?.ids) })
+  })
+  r.post("/approvals/rektor/batch", rektor, async (req, res) => {
+    res.json({ results: await rektorApproveBatch(ctx, req.account!, (req.body as { npms?: unknown } | undefined)?.npms) })
   })
   r.post("/records/:npm/rektor/reject", rektor, async (req, res) => {
     res.json(await rektorReject(ctx, req.account!, String(req.params.npm), reason(req.body)))

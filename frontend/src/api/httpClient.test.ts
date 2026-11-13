@@ -151,3 +151,24 @@ test("endpoint pejabat", async () => {
   expect(call(fetchImpl, 3)[0]).toBe("/api/officials/FMIPA/successions")
   expect(JSON.parse(call(fetchImpl, 3)[1].body as string)).toEqual({ name: "Nama Baru", from: "2026-11-01" })
 })
+
+test("approveDraftsBatch memanggil POST /api/approvals/dekan/batch dan mengembalikan hasil per item", async () => {
+  const results = [
+    { key: "1", ok: true, txId: "a".repeat(64) },
+    { key: "2", ok: false, status: 409, code: "CONFLICT", message: "Nomor SKPI sudah dipakai." },
+  ]
+  const { fetchImpl, client } = setup(json(200, { results }))
+  expect(await client.approveDraftsBatch(["1", "2"])).toEqual(results)
+  const [url, init] = call(fetchImpl)
+  expect(url).toBe("/api/approvals/dekan/batch")
+  expect(init.method).toBe("POST")
+  expect(JSON.parse(init.body as string)).toEqual({ ids: ["1", "2"] })
+})
+
+test("rektorApproveBatch memanggil POST /api/approvals/rektor/batch dengan daftar NPM", async () => {
+  const { fetchImpl, client } = setup(json(200, { results: [] }))
+  expect(await client.rektorApproveBatch(["2317051001"])).toEqual([])
+  const [url, init] = call(fetchImpl)
+  expect(url).toBe("/api/approvals/rektor/batch")
+  expect(JSON.parse(init.body as string)).toEqual({ npms: ["2317051001"] })
+})

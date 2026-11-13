@@ -1,6 +1,6 @@
 import type { ApiClient } from "./client"
 import { ApiError } from "./errors"
-import type { Draft, LedgerInfo, User, VerifyCandidate } from "./types"
+import type { ApprovalOutcome, Draft, LedgerInfo, User, VerifyCandidate } from "./types"
 
 const CODE_BY_STATUS: Record<number, string> = {
   400: "VALIDATION",
@@ -75,6 +75,8 @@ export function createHttpClient(base = "/api", fetchImpl: typeof fetch = fetch)
     approveDraft: (id) => post(`/drafts/${enc(id)}/approve`),
     rejectDraft: (id, reason) => draft(post(`/drafts/${enc(id)}/reject`, { reason })),
     rektorApprove: (npm) => post(`/records/${enc(npm)}/rektor/approve`),
+    approveDraftsBatch: (ids) => post<{ results: ApprovalOutcome[] }>("/approvals/dekan/batch", { ids }).then((r) => r.results),
+    rektorApproveBatch: (npms) => post<{ results: ApprovalOutcome[] }>("/approvals/rektor/batch", { npms }).then((r) => r.results),
     rektorReject: (npm, reason) => post(`/records/${enc(npm)}/rektor/reject`, { reason }),
     searchPublic: (q) =>
       request<{ candidates: VerifyCandidate[]; truncated?: boolean }>(`/verify?q=${enc(q)}`).then((r) => ({

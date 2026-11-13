@@ -1,5 +1,5 @@
 import type { ApiClient } from "@/api/client"
-import type { QueueItem, SkpiData } from "@/api/types"
+import type { ApprovalOutcome, QueueItem, SkpiData } from "@/api/types"
 
 export const keyOf = (q: QueueItem) => (q.kind === "draft" ? q.draft.id : q.record.npm)
 export const npmOf = (q: QueueItem) => (q.kind === "draft" ? q.draft.npm : q.record.npm)
@@ -40,3 +40,20 @@ export const reject = (api: ApiClient, q: QueueItem, reason: string) =>
 
 /** Pencabutan bersifat permanen: wajib ditinjau satu per satu, tidak ikut pengesahan massal. */
 export const bulkable = (q: QueueItem) => !(q.kind === "draft" && q.draft.type === "PENCABUTAN")
+
+/**
+ * Ukuran kelompok pengesahan massal: satu permintaan batch = satu blok berisi sebanyak itu metadata SKPI.
+ * Objek (bukan konstanta) agar uji dapat memperkecilnya.
+ */
+export const bulk = { size: 12 }
+
+export function chunk<T>(items: readonly T[], size: number): T[][] {
+  const n = Math.max(1, Math.floor(size))
+  const out: T[][] = []
+  for (let i = 0; i < items.length; i += n) out.push(items.slice(i, i + n))
+  return out
+}
+
+/** Sahkan satu kelompok item sekaligus (semuanya Dekan atau semuanya Rektor): satu permintaan, hasil per item. */
+export const approveBatch = (api: ApiClient, items: QueueItem[]): Promise<ApprovalOutcome[]> =>
+  items[0]?.kind === "draft" ? api.approveDraftsBatch(items.map(keyOf)) : api.rektorApproveBatch(items.map(keyOf))

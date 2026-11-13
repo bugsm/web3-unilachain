@@ -1,7 +1,9 @@
 import { screen, waitFor, within } from "@testing-library/react"
+import type userEvent from "@testing-library/user-event"
 import { ApiError } from "@/api/errors"
 import { createMockClient } from "@/api/mock/mockClient"
 import { loginAs, renderApp } from "@/test/renderApp"
+import { bulk } from "./queue"
 
 async function open(email: string, path = "/antrean") {
   const client = createMockClient({ latencyMs: 0 })
@@ -76,10 +78,15 @@ test("pengesahan massal melaporkan hasil per draft", async () => {
   const { user, client, queue } = await open("dekan.fmipa@unila.ac.id")
   const bagas = queue.find((q) => q.kind === "draft" && q.draft.npm === "2017051071")!
   const target = bagas.kind === "draft" ? bagas.draft.id : ""
-  const real = client.approveDraft.bind(client)
-  vi.spyOn(client, "approveDraft").mockImplementation((id) =>
-    id === target ? Promise.reject(new ApiError(409, "CONFLICT", "Nomor SKPI sudah dipakai SKPI lain.")) : real(id),
-  )
+  const real = client.approveDraftsBatch.bind(client)
+  vi.spyOn(client, "approveDraftsBatch").mockImplementation(async (ids) => {
+    const ok = await real(ids.filter((id) => id !== target))
+    return ids.map((id) =>
+      id === target
+        ? { key: id, ok: false as const, status: 409, code: "CONFLICT", message: "Nomor SKPI sudah dipakai SKPI lain." }
+        : ok.find((r) => r.key === id)!,
+    )
+  })
   for (const name of ["Aulia Rahmawati", "Bagas Prakoso", "Rizky Maulana"])
     await user.click(screen.getByRole("checkbox", { name: `Pilih ${name}` }))
   await user.click(screen.getByRole("button", { name: /Sahkan terpilih/ }))
@@ -144,23 +151,76 @@ test("pencabutan tidak bisa disahkan massal; daftar massal menampilkan jenis", a
   expect(within(dialog).getByText("Perubahan")).toBeInTheDocument()
 })
 
-test("pengesahan massal mengirim beberapa transaksi bersamaan, bukan berurutan", async () => {
-  const { user, client } = await open("dekan.fmipa@unila.ac.id")
-  const real = client.approveDraft.bind(client)
-  let running = 0
-  let peak = 0
-  vi.spyOn(client, "approveDraft").mockImplementation(async (id) => {
-    running++
-    peak = Math.max(peak, running)
-    await new Promise((r) => setTimeout(r, 20))
-    running--
-    return real(id)
-  })
-  for (const name of ["Aulia Rahmawati", "Bagas Prakoso", "Rizky Maulana"])
-    await user.click(screen.getByRole("checkbox", { name: `Pilih ${name}` }))
+async function selectAndRun(user: ReturnType<typeof userEvent.setup>, names: string[], noun: string) {
+  for (const name of names) await user.click(screen.getByRole("checkbox", { name: `Pilih ${name}` }))
   await user.click(screen.getByRole("button", { name: /Sahkan terpilih/ }))
-  const confirm = await screen.findByRole("dialog", { name: "Sahkan 3 draft?" })
-  await user.click(within(confirm).getByRole("button", { name: /Sahkan 3 draft/ }))
-  await screen.findByRole("dialog", { name: "3 berhasil, 0 gagal" })
-  expect(peak).toBe(3)
+  const confirm = await screen.findByRole("dialog", { name: `Sahkan ${names.length} ${noun}?` })
+  await user.click(within(confirm).getByRole("button", { name: new RegExp(`Sahkan ${names.length} ${noun}`) }))
+}
+
+describe("pengesahan massal: satu permintaan batch per kelompok (satu blok)", () => {
+  afterEach(() => {
+    bulk.size = 12
+  })
+
+  test("dekan: semua terpilih dikirim dalam SATU permintaan batch, bukan satu permintaan per draft", async () => {
+    const { user, client } = await open("dekan.fmipa@unila.ac.id")
+    const batch = vi.spyOn(client, "approveDraftsBatch")
+    const single = vi.spyOn(client, "approveDraft")
+    await selectAndRun(user, ["Aulia Rahmawati", "Bagas Prakoso", "Rizky Maulana"], "draft")
+    await screen.findByRole("dialog", { name: "3 berhasil, 0 gagal" })
+    expect(batch).toHaveBeenCalledTimes(1)
+    expect(batch.mock.calls[0][0]).toHaveLength(3)
+    expect(single).not.toHaveBeenCalled()
+  })
+
+  test("lebih banyak dari ukuran kelompok → beberapa permintaan berurutan, tiap kelompok tidak melebihi ukuran", async () => {
+    bulk.size = 2
+    const { user, client } = await open("dekan.fmipa@unila.ac.id")
+    const real = client.approveDraftsBatch.bind(client)
+    let running = 0
+    let peak = 0
+    const sizes: number[] = []
+    vi.spyOn(client, "approveDraftsBatch").mockImplementation(async (ids) => {
+      running++
+      peak = Math.max(peak, running)
+      sizes.push(ids.length)
+      await new Promise((r) => setTimeout(r, 10))
+      running--
+      return real(ids)
+    })
+    await selectAndRun(user, ["Aulia Rahmawati", "Bagas Prakoso", "Rizky Maulana"], "draft")
+    await screen.findByRole("dialog", { name: "3 berhasil, 0 gagal" })
+    expect(sizes).toEqual([2, 1])
+    expect(peak).toBe(1) // kelompok berikutnya baru dikirim setelah kelompok sebelumnya selesai
+  })
+
+  test("permintaan batch gagal seluruhnya (ledger mati): semua item kelompok gagal dengan pesan ramah dan tetap di antrean", async () => {
+    const { user, client } = await open("dekan.fmipa@unila.ac.id")
+    vi.spyOn(client, "approveDraftsBatch").mockRejectedValue(new ApiError(503, "UNAVAILABLE", "down"))
+    await selectAndRun(user, ["Aulia Rahmawati", "Bagas Prakoso"], "draft")
+    const result = await screen.findByRole("dialog", { name: "0 berhasil, 2 gagal" })
+    expect(within(result).getAllByText("Layanan ledger sedang tidak terjangkau.")).toHaveLength(2)
+    await user.click(within(result).getByRole("button", { name: "Selesai" }))
+    await waitFor(() => expect(screen.getByRole("row", { name: /Aulia Rahmawati/ })).toBeInTheDocument())
+  })
+
+  test("hasil per item dicocokkan lewat kunci, bukan urutan jawaban", async () => {
+    const { user, client } = await open("dekan.fmipa@unila.ac.id")
+    const real = client.approveDraftsBatch.bind(client)
+    vi.spyOn(client, "approveDraftsBatch").mockImplementation(async (ids) => (await real(ids)).reverse())
+    await selectAndRun(user, ["Aulia Rahmawati", "Bagas Prakoso"], "draft")
+    await screen.findByRole("dialog", { name: "2 berhasil, 0 gagal" })
+  })
+
+  test("rektor: pengesahan massal memakai rektorApproveBatch dengan NPM, satu permintaan", async () => {
+    const { user, client } = await open("rektor@unila.ac.id")
+    const batch = vi.spyOn(client, "rektorApproveBatch")
+    const single = vi.spyOn(client, "rektorApprove")
+    await selectAndRun(user, ["Fajar Pratama", "Andi Wijaya"], "SKPI")
+    await screen.findByRole("dialog", { name: "2 berhasil, 0 gagal" })
+    expect(batch).toHaveBeenCalledTimes(1)
+    expect(batch.mock.calls[0][0]).toHaveLength(2)
+    expect(single).not.toHaveBeenCalled()
+  })
 })
