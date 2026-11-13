@@ -13,6 +13,8 @@ import { formatDateTime } from "@/domain/format"
 import { predicateOf } from "@/domain/skpi"
 import { DRAFT_TYPE_LABEL } from "@/domain/status"
 import { BulkModal } from "./BulkModal"
+import { PagerBar, PageSizeSelect } from "./Pager"
+import { usePaging } from "./paging"
 import { bulkable, dataOf, keyOf, npmOf, sinceOf } from "./queue"
 import { ReviewModal } from "./ReviewModal"
 
@@ -35,8 +37,10 @@ export function ApprovalsScreen() {
       return !q || `${d.name} ${d.npm} ${d.skpiId} ${d.programStudy}`.toLowerCase().includes(q)
     })
   }, [items, query])
+  const paging = usePaging(rows)
   const picked = items.filter((it) => selected.has(keyOf(it)) && bulkable(it))
-  const selectable = rows.filter(bulkable)
+  // "Pilih semua" berlaku untuk baris yang sedang tampil (bukan yang ada di halaman lain).
+  const selectable = paging.visible.filter(bulkable)
   const allChecked = selectable.length > 0 && selectable.every((r) => selected.has(keyOf(r)))
 
   // Tautan dari ikhtisar: /antrean?tinjau=<npm> membuka modal tinjau.
@@ -77,7 +81,10 @@ export function ApprovalsScreen() {
           <Input
             aria-label="Cari di antrean"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              paging.setPage(1)
+            }}
             placeholder="Cari nama, NPM, atau nomor SKPI"
             className="pl-9"
           />
@@ -85,6 +92,7 @@ export function ApprovalsScreen() {
         <p className="text-sm text-slate-500">
           <span className="font-semibold text-ink tabular-nums">{queue.data ? rows.length : "–"}</span> menunggu
         </p>
+        <PageSizeSelect value={paging.size} onChange={paging.setSize} />
         {/* Bilah aksi massal: transisi (bukan keyframe) agar dapat diinterupsi saat pilihan berubah cepat. */}
         <div
           inert={selected.size === 0}
@@ -143,7 +151,7 @@ export function ApprovalsScreen() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((it) => {
+                {paging.visible.map((it) => {
                   const d = dataOf(it)
                   const key = keyOf(it)
                   const on = selected.has(key)
@@ -196,6 +204,7 @@ export function ApprovalsScreen() {
             </table>
           </div>
         )}
+        <PagerBar from={paging.from} to={paging.to} total={paging.total} page={paging.page} pages={paging.pages} onPage={paging.setPage} />
       </div>
 
       <ReviewModal

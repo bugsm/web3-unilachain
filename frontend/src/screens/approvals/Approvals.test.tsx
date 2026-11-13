@@ -228,3 +228,127 @@ describe("pengesahan massal: satu permintaan batch per kelompok (satu blok)", ()
     expect(single).not.toHaveBeenCalled()
   })
 })
+
+describe("antrean: jumlah baris per halaman (10, 50, 100, semua)", () => {
+  const KEY = "skpi.antrean.perHalaman"
+  beforeEach(() => localStorage.clear())
+
+  /** Antrean Rektor sintetis berisi n SKPI ("Lulusan 001", "Lulusan 002", ...). */
+  async function openMany(n: number) {
+    const client = createMockClient({ latencyMs: 0 })
+    await loginAs(client, "rektor@unila.ac.id")
+    const base = (await client.listQueue()).find((q) => q.kind === "rektor")!
+    const items = Array.from({ length: n }, (_, i) => {
+      const k = String(i + 1).padStart(3, "0")
+      return { kind: "rektor" as const, record: { ...base.record!, npm: `2317${String(100000 + i + 1).slice(-6)}`, name: `Lulusan ${k}`, skpiId: `${k}/UN26.17/SKPI/2026` } }
+    })
+    vi.spyOn(client, "listQueue").mockResolvedValue(items)
+    const r = await renderApp("/antrean", { client })
+    await screen.findByRole("heading", { name: "Antrean pengesahan" })
+    await screen.findAllByRole("button", { name: "Tinjau" })
+    return r
+  }
+  const shown = () => screen.getAllByRole("button", { name: "Tinjau" }).length
+  const sizeSelect = () => screen.getByRole("combobox", { name: "Baris per halaman" })
+  const choose = (user: ReturnType<typeof userEvent.setup>, value: string) => user.selectOptions(sizeSelect(), value)
+
+  test("bawaan 10 baris dengan keterangan jumlah", async () => {
+    await openMany(120)
+    expect(shown()).toBe(10)
+    expect(screen.getByText(/Menampilkan 1–10 dari 120/)).toBeInTheDocument()
+    expect(screen.getByRole("row", { name: /Lulusan 001/ })).toBeInTheDocument()
+    expect(screen.queryByRole("row", { name: /Lulusan 011/ })).toBeNull()
+  })
+
+  test("pilihan berisi 10, 50, 100, dan Semua", async () => {
+    await openMany(120)
+    expect(within(sizeSelect()).getAllByRole("option").map((o) => o.textContent)).toEqual(["10", "50", "100", "Semua"])
+  })
+
+  test.each([
+    ["50", 50],
+    ["100", 100],
+    ["10", 10],
+  ])("memilih %s menampilkan %i baris", async (value, count) => {
+    const { user } = await openMany(120)
+    await choose(user, value === "10" ? "50" : "10") // pastikan berubah dari nilai awal
+    await choose(user, value)
+    expect(shown()).toBe(count)
+    expect(screen.getByText(new RegExp(`Menampilkan 1–${count} dari 120`))).toBeInTheDocument()
+  })
+
+  test("Semua menampilkan seluruh baris tanpa tombol halaman", async () => {
+    const { user } = await openMany(120)
+    await choose(user, "all")
+    expect(shown()).toBe(120)
+    expect(screen.getByText(/Menampilkan 1–120 dari 120/)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Berikutnya" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Sebelumnya" })).toBeNull()
+  })
+
+  test("berpindah halaman: berikutnya menampilkan 11–20, sebelumnya kembali; tombol nonaktif di ujung", async () => {
+    const { user } = await openMany(25)
+    expect(screen.getByText(/Halaman 1 dari 3/)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Sebelumnya" })).toBeDisabled()
+    await user.click(screen.getByRole("button", { name: "Berikutnya" }))
+    expect(screen.getByText(/Menampilkan 11–20 dari 25/)).toBeInTheDocument()
+    expect(screen.getByRole("row", { name: /Lulusan 011/ })).toBeInTheDocument()
+    expect(screen.queryByRole("row", { name: /Lulusan 001/ })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Berikutnya" }))
+    expect(screen.getByText(/Menampilkan 21–25 dari 25/)).toBeInTheDocument()
+    expect(shown()).toBe(5)
+    expect(screen.getByRole("button", { name: "Berikutnya" })).toBeDisabled()
+    await user.click(screen.getByRole("button", { name: "Sebelumnya" }))
+    expect(screen.getByText(/Menampilkan 11–20 dari 25/)).toBeInTheDocument()
+  })
+
+  test("mengganti jumlah baris kembali ke halaman pertama", async () => {
+    const { user } = await openMany(120)
+    await user.click(screen.getByRole("button", { name: "Berikutnya" }))
+    await user.click(screen.getByRole("button", { name: "Berikutnya" }))
+    expect(screen.getByText(/Menampilkan 21–30 dari 120/)).toBeInTheDocument()
+    await choose(user, "50")
+    expect(screen.getByText(/Menampilkan 1–50 dari 120/)).toBeInTheDocument()
+  })
+
+  test("pencarian kembali ke halaman pertama dan jumlah mengikuti hasil", async () => {
+    const { user } = await openMany(120)
+    await user.click(screen.getByRole("button", { name: "Berikutnya" }))
+    await user.type(screen.getByLabelText("Cari di antrean"), "Lulusan 05")
+    expect(screen.getByText(/Menampilkan 1–10 dari 10/)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Berikutnya" })).toBeNull()
+    expect(shown()).toBe(10)
+  })
+
+  test("total tidak melebihi ukuran halaman: tanpa tombol halaman", async () => {
+    await openMany(7)
+    expect(screen.getByText(/Menampilkan 1–7 dari 7/)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Berikutnya" })).toBeNull()
+  })
+
+  test("Pilih semua hanya memilih baris yang sedang tampil", async () => {
+    const { user } = await openMany(120)
+    await user.click(screen.getByRole("checkbox", { name: "Pilih semua" }))
+    expect(screen.getByText("10 dipilih")).toBeInTheDocument()
+    await choose(user, "50")
+    expect(screen.getByRole("checkbox", { name: "Pilih semua" })).not.toBeChecked() // baris 11-50 belum terpilih
+    await user.click(screen.getByRole("checkbox", { name: "Pilih semua" }))
+    expect(screen.getByText("50 dipilih")).toBeInTheDocument()
+  })
+
+  test("pilihan jumlah baris diingat di peramban dan dipulihkan", async () => {
+    const { user, unmount } = await openMany(120)
+    await choose(user, "50")
+    expect(localStorage.getItem(KEY)).toBe("50")
+    unmount()
+    await openMany(120)
+    expect(shown()).toBe(50)
+    expect(sizeSelect()).toHaveValue("50")
+  })
+
+  test("nilai tersimpan yang tidak sah diabaikan (kembali ke 10)", async () => {
+    localStorage.setItem(KEY, "7")
+    await openMany(120)
+    expect(shown()).toBe(10)
+  })
+})
